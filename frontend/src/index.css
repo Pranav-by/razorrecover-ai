@@ -1,0 +1,270 @@
+:root {
+  --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Palette from the visual reference */
+  --bg-yellow: #f6b828;
+  --bg-dot: #d99b1a;
+  --card-bg: #fffdfa;
+  --card-bg-subtle: #f8f6f0;
+  --border-black: #121316;
+  
+  --accent-yellow: #ffe600;
+  --accent-yellow-light: #fff275;
+  --accent-coral: #ff5757;
+  --accent-blue: #3b82f6;
+  --accent-cyan: #38bdf8;
+  --accent-green: #22c55e;
+  --accent-purple: #a855f7;
+  --accent-orange: #f97316;
+
+  --shadow-sm: 3px 3px 0px var(--border-black);
+  --shadow-md: 5px 5px 0px var(--border-black);
+  --shadow-lg: 8px 8px 0px var(--border-black);
+  --shadow-hover: 2px 2px 0px var(--border-black);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--bg-yellow);
+  background-image: radial-gradient(var(--bg-dot) 1.5px, transparent 1.5px);
+  background-size: 20px 20px;
+  color: #121316;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--border-black);
+  letter-spacing: -0.02em;
+}
+
+/* Neo-Brutalist Card */
+.neo-card {
+  background: var(--card-bg);
+  border: 2.5px solid var(--border-black);
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+  transition: all 0.15s ease-in-out;
+}
+
+.neo-card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.neo-card-flat {
+  background: var(--card-bg);
+  border: 2px solid var(--border-black);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Neo-Brutalist Button */
+.neo-btn {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 20px;
+  border: 2.5px solid var(--border-black);
+  border-radius: 14px;
+  background: var(--accent-yellow);
+  color: var(--border-black);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.1s ease;
+  text-decoration: none;
+}
+
+.neo-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-md);
+}
+
+.neo-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px var(--border-black);
+}
+
+.neo-btn-primary {
+  background: var(--accent-yellow);
+}
+
+.neo-btn-coral {
+  background: var(--accent-coral);
+  color: #ffffff;
+}
+
+.neo-btn-green {
+  background: var(--accent-green);
+  color: #ffffff;
+}
+
+.neo-btn-white {
+  background: #ffffff;
+  color: var(--border-black);
+}
+
+.neo-btn-sm {
+  padding: 6px 14px;
+  font-size: 12px;
+  border-radius: 10px;
+  border-width: 2px;
+}
+
+.neo-btn-lg {
+  padding: 14px 28px;
+  font-size: 16px;
+  border-radius: 18px;
+}
+
+/* Neo-Brutalist Floating Action Button (+) */
+.neo-fab {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid var(--border-black);
+  background: var(--accent-yellow);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 28px;
+  font-weight: 900;
+  transition: all 0.15s ease;
+}
+
+.neo-fab:hover {
+  transform: scale(1.05) translate(-2px, -2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.neo-fab:active {
+  transform: scale(0.95) translate(2px, 2px);
+  box-shadow: 2px 2px 0px var(--border-black);
+}
+
+/* Neo-Brutalist Badge / Pill */
+.neo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border: 2px solid var(--border-black);
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 2px 2px 0px var(--border-black);
+}
+
+.neo-badge-yellow { background: var(--accent-yellow); }
+.neo-badge-coral { background: var(--accent-coral); color: #fff; }
+.neo-badge-green { background: var(--accent-green); color: #fff; }
+.neo-badge-blue { background: var(--accent-cyan); color: #121316; }
+.neo-badge-purple { background: var(--accent-purple); color: #fff; }
+
+/* Neo-Brutalist Input */
+.neo-input {
+  width: 100%;
+  font-family: var(--font-main);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 18px;
+  border: 2.5px solid var(--border-black);
+  border-radius: 14px;
+  background: #ffffff;
+  color: var(--border-black);
+  box-shadow: var(--shadow-sm);
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.neo-input:focus {
+  border-color: var(--border-black);
+  box-shadow: var(--shadow-md);
+  background: #ffffff;
+}
+
+/* Organic Pill Highlight (for active navigation tabs) */
+.organic-highlight {
+  position: relative;
+  z-index: 1;
+}
+
+.organic-highlight::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -8px;
+  right: -8px;
+  bottom: -4px;
+  background: var(--accent-yellow);
+  border: 2px solid var(--border-black);
+  border-radius: 20px 8px 18px 10px;
+  z-index: -1;
+  transform: rotate(-1.5deg);
+}
+
+/* Countdown Block Box (as in reference challenge box) */
+.neo-counter-box {
+  background: #ffffff;
+  border: 2.5px solid var(--border-black);
+  border-radius: 14px;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 68px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Avatar Circle with thick outline */
+.neo-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--border-black);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 2px 2px 0px var(--border-black);
+}
+
+/* Geometric Decorative Elements */
+.geo-star {
+  color: var(--accent-yellow);
+  stroke: var(--border-black);
+  stroke-width: 2px;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f8f6f0;
+  border-left: 2px solid var(--border-black);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-black);
+  border-radius: 4px;
+}

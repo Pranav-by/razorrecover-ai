@@ -1,6 +1,5 @@
 import React from 'react';
-import { Box, Card, CardBody, Heading, Text, Badge } from '@razorpay/blade/components';
-import { Shield, Clock, AlertTriangle, MessageSquare } from 'lucide-react';
+import { Shield, Clock, AlertTriangle, MessageSquare, CheckCircle2 } from 'lucide-react';
 
 export const Policies: React.FC = () => {
   const financialRules = [
@@ -24,93 +23,157 @@ export const Policies: React.FC = () => {
   ];
 
   return (
-    <Box display="flex" flexDirection="column" gap="spacing.6" padding="spacing.7">
-      <Box display="flex" alignItems="center" gap="spacing.3">
-        <Shield size={24} color="#10b981" />
-        <Box display="flex" flexDirection="column">
-          <Heading size="large" weight="semibold" color="surface.text.gray.normal">
-            Financial & Regulatory Guardrail Policy Engine
-          </Heading>
-          <Text size="small" color="surface.text.gray.muted">
-            Explicit deterministic rules governing all autonomous agent actions, financial movement, and compliant communications.
-          </Text>
-        </Box>
-      </Box>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '16px 24px 80px 24px' }}>
+      {/* Header */}
+      <div
+        className="neo-card"
+        style={{
+          padding: '20px 24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '16px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '12px',
+              border: '2px solid var(--border-black)',
+              backgroundColor: '#22c55e',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '2px 2px 0px var(--border-black)',
+            }}
+          >
+            <Shield size={22} />
+          </div>
+          <div>
+            <h2 style={{ fontSize: '20px', margin: 0 }}>Financial & Regulatory Guardrail Engine</h2>
+            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
+              Deterministic bounds governing autonomous agent financial movements & customer communications
+            </span>
+          </div>
+        </div>
 
-      {/* Financial Guardrails */}
-      <Card padding="spacing.5">
-        <CardBody>
-          <Box display="flex" flexDirection="column" gap="spacing.4">
-            <Box display="flex" alignItems="center" gap="spacing.2">
-              <AlertTriangle size={18} color="#f59e0b" />
-              <Heading size="medium" weight="semibold" color="surface.text.gray.normal">
-                Financial Risk & Action Caps
-              </Heading>
-            </Box>
+        <div className="neo-badge neo-badge-green">
+          <span>Active & Enforced</span>
+        </div>
+      </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-              {financialRules.map((rule) => (
-                <Box key={rule.name} padding="spacing.4" borderRadius="medium" backgroundColor="surface.background.gray.subtle" display="flex" flexDirection="column" gap="spacing.2">
-                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Text size="small" weight="semibold" color="surface.text.gray.normal">{rule.name}</Text>
-                    <Badge color="positive" size="small">{rule.value}</Badge>
-                  </Box>
-                  <Text size="xsmall" color="surface.text.gray.muted">{rule.desc}</Text>
-                </Box>
-              ))}
+      {/* Financial Risk & Action Caps */}
+      <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <AlertTriangle size={20} color="#f97316" />
+          <h3 style={{ fontSize: '18px', margin: 0 }}>Financial Risk & Action Caps</h3>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+          {financialRules.map((rule) => (
+            <div
+              key={rule.name}
+              style={{
+                padding: '16px',
+                borderRadius: '14px',
+                border: '2px solid var(--border-black)',
+                backgroundColor: '#ffffff',
+                boxShadow: '2px 2px 0px var(--border-black)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontFamily: 'var(--font-heading)', fontSize: '14px', fontWeight: 800, color: 'var(--border-black)' }}>
+                  {rule.name}
+                </span>
+                <div className="neo-badge neo-badge-yellow" style={{ fontSize: '11px', padding: '2px 8px' }}>
+                  {rule.value}
+                </div>
+              </div>
+              <span style={{ fontSize: '12px', color: '#475569', fontWeight: 500, lineHeight: 1.4 }}>
+                {rule.desc}
+              </span>
             </div>
-          </Box>
-        </CardBody>
-      </Card>
+          ))}
+        </div>
+      </div>
 
       {/* Regulatory & Communication Compliance */}
-      <Card padding="spacing.5">
-        <CardBody>
-          <Box display="flex" flexDirection="column" gap="spacing.4">
-            <Box display="flex" alignItems="center" gap="spacing.2">
-              <Clock size={18} color="#3b82f6" />
-              <Heading size="medium" weight="semibold" color="surface.text.gray.normal">
-                Compliant Escalation & Customer Protection Rules
-              </Heading>
-            </Box>
+      <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Clock size={20} color="#3b82f6" />
+          <h3 style={{ fontSize: '18px', margin: 0 }}>Compliant Escalation & Customer Protection</h3>
+        </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-              {complianceRules.map((rule) => (
-                <Box key={rule.name} padding="spacing.4" borderRadius="medium" backgroundColor="surface.background.gray.subtle" display="flex" flexDirection="column" gap="spacing.2">
-                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Text size="small" weight="semibold" color="surface.text.gray.normal">{rule.name}</Text>
-                    <Badge color="information" size="small">{rule.value}</Badge>
-                  </Box>
-                  <Text size="xsmall" color="surface.text.gray.muted">{rule.desc}</Text>
-                </Box>
-              ))}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+          {complianceRules.map((rule) => (
+            <div
+              key={rule.name}
+              style={{
+                padding: '16px',
+                borderRadius: '14px',
+                border: '2px solid var(--border-black)',
+                backgroundColor: '#ffffff',
+                boxShadow: '2px 2px 0px var(--border-black)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontFamily: 'var(--font-heading)', fontSize: '14px', fontWeight: 800, color: 'var(--border-black)' }}>
+                  {rule.name}
+                </span>
+                <div className="neo-badge neo-badge-blue" style={{ fontSize: '11px', padding: '2px 8px' }}>
+                  {rule.value}
+                </div>
+              </div>
+              <span style={{ fontSize: '12px', color: '#475569', fontWeight: 500, lineHeight: 1.4 }}>
+                {rule.desc}
+              </span>
             </div>
-          </Box>
-        </CardBody>
-      </Card>
+          ))}
+        </div>
+      </div>
 
       {/* Approved Message Template Library */}
-      <Card padding="spacing.5">
-        <CardBody>
-          <Box display="flex" flexDirection="column" gap="spacing.4">
-            <Box display="flex" alignItems="center" gap="spacing.2">
-              <MessageSquare size={18} color="#8b5cf6" />
-              <Heading size="medium" weight="semibold" color="surface.text.gray.normal">
-                Approved Template Library (No Ad-Hoc LLM Messages)
-              </Heading>
-            </Box>
+      <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <MessageSquare size={20} color="#a855f7" />
+          <h3 style={{ fontSize: '18px', margin: 0 }}>Approved Template Library (No Unvetted LLM Outbounds)</h3>
+        </div>
 
-            <Box display="flex" flexDirection="column" gap="spacing.3">
-              {templates.map((tpl) => (
-                <Box key={tpl.id} padding="spacing.4" borderRadius="medium" backgroundColor="surface.background.gray.subtle" display="flex" flexDirection="column" gap="spacing.1">
-                  <Badge color="neutral" size="small">{tpl.id}</Badge>
-                  <Text size="small" color="surface.text.gray.normal">"{tpl.text}"</Text>
-                </Box>
-              ))}
-            </Box>
-          </Box>
-        </CardBody>
-      </Card>
-    </Box>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {templates.map((tpl) => (
+            <div
+              key={tpl.id}
+              style={{
+                padding: '14px 18px',
+                borderRadius: '12px',
+                border: '2px solid var(--border-black)',
+                backgroundColor: '#ffffff',
+                boxShadow: '2px 2px 0px var(--border-black)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px',
+              }}
+            >
+              <div className="neo-badge neo-badge-yellow" style={{ alignSelf: 'flex-start', fontSize: '11px', padding: '2px 8px' }}>
+                {tpl.id}
+              </div>
+              <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#121316', fontStyle: 'italic' }}>
+                "{tpl.text}"
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 };

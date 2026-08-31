@@ -1,7 +1,5 @@
 import React, { useState, Component, ErrorInfo, ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { BladeProvider, Box } from '@razorpay/blade/components';
-import { bladeTheme } from '@razorpay/blade/tokens';
 import { Navbar } from './components/Navbar';
 import { Dashboard } from './pages/Dashboard';
 import { Recoveries } from './pages/Recoveries';
@@ -36,16 +34,17 @@ class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: '40px', color: '#f87171', backgroundColor: '#0f172a', minHeight: '100vh', fontFamily: 'monospace' }}>
+        <div style={{ padding: '40px', color: '#ff5757', backgroundColor: '#fffdfa', minHeight: '100vh', fontFamily: 'monospace' }}>
           <h2>Application Rendering Error:</h2>
-          <pre style={{ marginTop: '20px', padding: '16px', backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'auto' }}>
+          <pre style={{ marginTop: '20px', padding: '16px', backgroundColor: '#f8f6f0', border: '2px solid #000', borderRadius: '12px', overflow: 'auto' }}>
             {this.state.error?.toString()}
             {'\n'}
             {this.state.error?.stack}
           </pre>
           <button
             onClick={() => window.location.reload()}
-            style={{ marginTop: '20px', padding: '10px 20px', backgroundColor: '#0c8ce9', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+            className="neo-btn neo-btn-primary"
+            style={{ marginTop: '20px' }}
           >
             Reload Page
           </button>
@@ -84,26 +83,24 @@ export const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <BladeProvider themeTokens={bladeTheme} colorScheme="dark">
-        <Router>
-          <Box minHeight="100vh" backgroundColor="surface.background.gray.intense">
-            <Navbar
-              isRunning={isRunningBatch}
-              onRunBatch={handleRunBatch}
-              onResetData={handleResetData}
-            />
-            <Box as="main" maxWidth="1400px" marginX="auto">
-              <Routes>
-                <Route path="/" element={<Dashboard isRunning={isRunningBatch} onRunBatch={handleRunBatch} />} />
-                <Route path="/recoveries" element={<Recoveries />} />
-                <Route path="/recoveries/:id" element={<RecoveryDetail />} />
-                <Route path="/review" element={<ReviewQueue />} />
-                <Route path="/policies" element={<Policies />} />
-              </Routes>
-            </Box>
-          </Box>
-        </Router>
-      </BladeProvider>
+      <Router>
+        <div style={{ minHeight: '100vh', width: '100%' }}>
+          <Navbar
+            isRunning={isRunningBatch}
+            onRunBatch={handleRunBatch}
+            onResetData={handleResetData}
+          />
+          <main style={{ maxWidth: '1440px', margin: '0 auto' }}>
+            <Routes>
+              <Route path="/" element={<Dashboard isRunning={isRunningBatch} onRunBatch={handleRunBatch} />} />
+              <Route path="/recoveries" element={<Recoveries />} />
+              <Route path="/recoveries/:id" element={<RecoveryDetail />} />
+              <Route path="/review" element={<ReviewQueue />} />
+              <Route path="/policies" element={<Policies />} />
+            </Routes>
+          </main>
+        </div>
+      </Router>
     </ErrorBoundary>
   );
 };

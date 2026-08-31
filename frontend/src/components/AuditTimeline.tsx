@@ -1,7 +1,6 @@
 import React from 'react';
-import { Box, Card, CardBody, Heading, Text, Badge } from '@razorpay/blade/components';
 import { AuditLogEntry } from '../types';
-import { CheckCircle2, ShieldAlert, Cpu, UserCheck, Activity, AlertOctagon } from 'lucide-react';
+import { ShieldAlert, Activity, CheckCircle2, AlertOctagon, BrainCircuit, UserCheck } from 'lucide-react';
 
 interface AuditTimelineProps {
   entries: AuditLogEntry[];
@@ -10,126 +9,130 @@ interface AuditTimelineProps {
 export const AuditTimeline: React.FC<AuditTimelineProps> = ({ entries }) => {
   if (!entries || entries.length === 0) {
     return (
-      <Card padding="spacing.5">
-        <CardBody>
-          <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" padding="spacing.7" gap="spacing.3">
-            <Activity size={32} color="#64748b" />
-            <Text size="medium" color="surface.text.gray.muted">
-              No audit log entries recorded yet.
-            </Text>
-          </Box>
-        </CardBody>
-      </Card>
+      <div className="neo-card" style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>
+        <Activity size={32} style={{ margin: '0 auto 12px auto' }} />
+        <h4 style={{ margin: 0 }}>No audit log entries recorded yet</h4>
+      </div>
     );
   }
 
   return (
-    <Card padding="spacing.5">
-      <CardBody>
-        <Box display="flex" flexDirection="column" gap="spacing.5">
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Box display="flex" alignItems="center" gap="spacing.3">
-              <ShieldAlert size={20} color="#10b981" />
-              <Heading size="medium" weight="semibold" color="surface.text.gray.normal">
-                Immutable Decision & Action Audit Trail
-              </Heading>
-            </Box>
-            <Badge color="positive" size="medium">
-              Append-Only Verified ({entries.length} steps)
-            </Badge>
-          </Box>
+    <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '10px',
+              border: '2px solid var(--border-black)',
+              backgroundColor: '#22c55e',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '2px 2px 0px var(--border-black)',
+            }}
+          >
+            <ShieldAlert size={20} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: '18px', margin: 0 }}>Immutable Decision Audit Trail</h3>
+            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
+              Append-only cryptographic state verification
+            </span>
+          </div>
+        </div>
 
-          <Box display="flex" flexDirection="column" gap="spacing.4" position="relative">
-            {entries.map((entry, index) => {
-              let Icon = Activity;
-              let iconColor = '#3b82f6';
-              let badgeVariant: 'positive' | 'negative' | 'information' | 'notice' | 'neutral' = 'information';
+        <div className="neo-badge neo-badge-green">
+          <span>{entries.length} Steps Logged</span>
+        </div>
+      </div>
 
-              if (entry.actor === 'ai') {
-                Icon = Cpu;
-                iconColor = '#8b5cf6';
-                badgeVariant = 'information';
-              } else if (entry.actor === 'policy_engine' || entry.actor === 'stopping_rules') {
-                if (entry.event.includes('blocked') || entry.event.includes('stop')) {
-                  Icon = AlertOctagon;
-                  iconColor = '#ef4444';
-                  badgeVariant = 'negative';
-                } else {
-                  Icon = CheckCircle2;
-                  iconColor = '#10b981';
-                  badgeVariant = 'positive';
-                }
-              } else if (entry.actor === 'human') {
-                Icon = UserCheck;
-                iconColor = '#f59e0b';
-                badgeVariant = 'notice';
-              } else if (entry.actor === 'verification') {
-                Icon = CheckCircle2;
-                iconColor = '#10b981';
-                badgeVariant = 'positive';
-              }
+      {/* Timeline Steps */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {entries.map((entry, index) => {
+          let badgeClass = 'neo-badge-blue';
+          let borderAccent = '#38bdf8';
 
-              const formattedTime = new Date(entry.timestamp).toLocaleTimeString('en-IN', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-              });
+          if (entry.actor === 'ai') {
+            badgeClass = 'neo-badge-purple';
+            borderAccent = '#a855f7';
+          } else if (entry.actor === 'policy_engine' || entry.actor === 'stopping_rules') {
+            if (entry.event.includes('blocked') || entry.event.includes('stop')) {
+              badgeClass = 'neo-badge-coral';
+              borderAccent = '#ff5757';
+            } else {
+              badgeClass = 'neo-badge-green';
+              borderAccent = '#22c55e';
+            }
+          } else if (entry.actor === 'human') {
+            badgeClass = 'neo-badge-yellow';
+            borderAccent = '#ffe600';
+          } else if (entry.actor === 'verification') {
+            badgeClass = 'neo-badge-green';
+            borderAccent = '#22c55e';
+          }
 
-              return (
+          const formattedTime = new Date(entry.timestamp).toLocaleTimeString('en-IN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          });
+
+          return (
+            <div
+              key={entry._id || index}
+              style={{
+                padding: '16px',
+                borderRadius: '14px',
+                border: '2px solid var(--border-black)',
+                borderLeft: `6px solid ${borderAccent}`,
+                backgroundColor: '#ffffff',
+                boxShadow: '2px 2px 0px var(--border-black)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div className={`neo-badge ${badgeClass}`} style={{ fontSize: '10px', padding: '2px 8px' }}>
+                    {entry.actor.toUpperCase()}
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-heading)', fontSize: '13px', fontWeight: 800, color: 'var(--border-black)' }}>
+                    {entry.event.replace(/_/g, ' ').toUpperCase()}
+                  </span>
+                </div>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>
+                  {formattedTime}
+                </span>
+              </div>
+
+              <div style={{ fontSize: '13px', fontWeight: 500, color: '#334155' }}>
+                {entry.message}
+              </div>
+
+              {entry.metadata && Object.keys(entry.metadata).length > 0 && (
                 <div
-                  key={entry._id || index}
                   style={{
-                    display: 'flex',
-                    gap: '16px',
-                    alignItems: 'flex-start',
-                    padding: '16px',
+                    marginTop: '4px',
+                    padding: '10px 14px',
                     borderRadius: '8px',
-                    backgroundColor: 'rgba(30, 41, 59, 0.5)',
-                    borderLeft: `3px solid ${iconColor}`,
+                    backgroundColor: '#fffdfa',
+                    border: '1.5px solid var(--border-black)',
                   }}
                 >
-                  <div style={{ marginTop: '4px' }}>
-                    <Icon size={18} color={iconColor} />
-                  </div>
-
-                  <Box display="flex" flexDirection="column" gap="spacing.1" flex="1">
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Box display="flex" alignItems="center" gap="spacing.2">
-                        <Badge color={badgeVariant} size="small">
-                          {entry.actor.toUpperCase()}
-                        </Badge>
-                        <Text size="small" weight="semibold" color="surface.text.gray.normal">
-                          {entry.event.replace(/_/g, ' ').toUpperCase()}
-                        </Text>
-                      </Box>
-                      <Text size="xsmall" color="surface.text.gray.muted">
-                        {formattedTime}
-                      </Text>
-                    </Box>
-
-                    <Text size="small" color="surface.text.gray.muted">
-                      {entry.message}
-                    </Text>
-
-                    {entry.metadata && Object.keys(entry.metadata).length > 0 && (
-                      <Box
-                        marginTop="spacing.2"
-                        padding="spacing.3"
-                        borderRadius="small"
-                        backgroundColor="surface.background.gray.intense"
-                      >
-                        <pre style={{ margin: 0, fontSize: '11px', color: '#94a3b8', overflowX: 'auto', fontFamily: 'monospace' }}>
-                          {JSON.stringify(entry.metadata, null, 2)}
-                        </pre>
-                      </Box>
-                    )}
-                  </Box>
+                  <pre style={{ margin: 0, fontSize: '11px', color: '#121316', overflowX: 'auto', fontFamily: 'var(--font-mono)' }}>
+                    {JSON.stringify(entry.metadata, null, 2)}
+                  </pre>
                 </div>
-              );
-            })}
-          </Box>
-        </Box>
-      </CardBody>
-    </Card>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 };

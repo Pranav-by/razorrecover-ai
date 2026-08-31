@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Box, Card, CardBody, Heading, Text, Badge, Button } from '@razorpay/blade/components';
 import { RecoveryCase } from '../types';
 import { getRecoveryById, approveReviewCase, rejectReviewCase } from '../services/api';
 import { AuditTimeline } from '../components/AuditTimeline';
-import { ArrowLeft, BrainCircuit, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, BrainCircuit, ShieldAlert, CheckCircle2, AlertOctagon, Star } from 'lucide-react';
 
 export const RecoveryDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -42,80 +41,85 @@ export const RecoveryDetail: React.FC = () => {
 
   if (loading || !caseData) {
     return (
-      <Box padding="spacing.7" display="flex" justifyContent="center">
-        <Text size="medium" color="surface.text.gray.muted">
-          Loading case telemetry...
-        </Text>
-      </Box>
+      <div style={{ padding: '60px 24px', textAlign: 'center', fontFamily: 'var(--font-heading)', fontSize: '18px', fontWeight: 700 }}>
+        Loading recovery telemetry...
+      </div>
     );
   }
 
-  let statusBadgeVariant: 'positive' | 'negative' | 'information' | 'notice' | 'neutral' = 'information';
-  if (caseData.status === 'RECOVERED') statusBadgeVariant = 'positive';
-  else if (caseData.status === 'BLOCKED' || caseData.status === 'HALTED' || caseData.status === 'FAILED') statusBadgeVariant = 'negative';
-  else if (caseData.status === 'HUMAN_REVIEW' || caseData.status === 'PAUSED') statusBadgeVariant = 'notice';
+  let statusBadgeClass = 'neo-badge-blue';
+  if (caseData.status === 'RECOVERED') statusBadgeClass = 'neo-badge-green';
+  else if (caseData.status === 'BLOCKED' || caseData.status === 'HALTED' || caseData.status === 'FAILED') statusBadgeClass = 'neo-badge-coral';
+  else if (caseData.status === 'HUMAN_REVIEW' || caseData.status === 'PAUSED') statusBadgeClass = 'neo-badge-yellow';
 
   return (
-    <Box display="flex" flexDirection="column" gap="spacing.6" padding="spacing.7">
-      {/* Top Back Link */}
-      <Box display="flex" alignItems="center" justifyContent="space-between">
-        <Link to="/recoveries" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0c8ce9', textDecoration: 'none', fontWeight: 600 }}>
-          <ArrowLeft size={16} />
-          Back to Cases List
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '16px 24px 80px 24px' }}>
+      {/* Top Nav Link */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Link to="/recoveries" className="neo-btn neo-btn-white neo-btn-sm">
+          <ArrowLeft size={14} />
+          <span>Back to Revenue Cases</span>
         </Link>
+
         {caseData.status === 'HUMAN_REVIEW' && (
-          <Box display="flex" gap="spacing.3">
-            <Button variant="secondary" size="small" onClick={handleReject}>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={handleReject} className="neo-btn neo-btn-coral neo-btn-sm">
               Reject Action
-            </Button>
-            <Button variant="primary" size="small" onClick={handleApprove}>
+            </button>
+            <button onClick={handleApprove} className="neo-btn neo-btn-green neo-btn-sm">
               Approve Intervention
-            </Button>
-          </Box>
+            </button>
+          </div>
         )}
-      </Box>
+      </div>
 
       {/* Case Header Card */}
-      <Card padding="spacing.5">
-        <CardBody>
-          <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap="spacing.4">
-            <Box display="flex" flexDirection="column" gap="spacing.2">
-              <Box display="flex" alignItems="center" gap="spacing.3">
-                <Heading size="xlarge" weight="semibold" color="surface.text.gray.normal">
-                  Case {caseData.caseId}
-                </Heading>
-                <Badge color={statusBadgeVariant} size="medium">
-                  {caseData.status}
-                </Badge>
-                {caseData.stoppingRule && (
-                  <Badge color="negative" size="small">
-                    STOPPING RULE: {caseData.stoppingRule}
-                  </Badge>
-                )}
-              </Box>
-              <Text size="small" color="surface.text.gray.muted">
-                Customer: <strong style={{ color: '#f8fafc' }}>{caseData.customerName}</strong> ({caseData.customerId}) • Scenario: <strong style={{ color: '#f8fafc' }}>{caseData.scenario}</strong>
-              </Text>
-            </Box>
+      <div
+        className="neo-card"
+        style={{
+          padding: '24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '20px',
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <h1 style={{ fontSize: '24px', margin: 0 }}>Case {caseData.caseId}</h1>
+            <div className={`neo-badge ${statusBadgeClass}`}>
+              <span>{caseData.status}</span>
+            </div>
+            {caseData.stoppingRule && (
+              <div className="neo-badge neo-badge-coral">
+                <AlertOctagon size={12} />
+                <span>STOPPING RULE: {caseData.stoppingRule}</span>
+              </div>
+            )}
+          </div>
 
-            <Box display="flex" flexDirection="column" alignItems="flex-end" gap="spacing.1">
-              <Text size="xsmall" color="surface.text.gray.muted">
-                REVENUE AT RISK
-              </Text>
-              <Heading size="2xlarge" weight="semibold" color="surface.text.gray.normal">
-                ₹{caseData.amountAtRisk.toLocaleString('en-IN')}
-              </Heading>
-              {caseData.recoveredAmount > 0 && (
-                <span style={{ color: '#10b981', fontWeight: 600, fontSize: '13px' }}>
-                  ✓ Recovered: ₹{caseData.recoveredAmount.toLocaleString('en-IN')}
-                </span>
-              )}
-            </Box>
-          </Box>
-        </CardBody>
-      </Card>
+          <div style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>
+            Customer: <strong style={{ color: '#121316' }}>{caseData.customerName}</strong> ({caseData.customerId}) • Scenario: <strong style={{ color: '#121316' }}>{caseData.scenario.toUpperCase()}</strong>
+          </div>
+        </div>
 
-      {/* Main 2-Column Split: AI Decision Panel + Policy vs Audit Trail */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+          <span style={{ fontSize: '11px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#64748b', textTransform: 'uppercase' }}>
+            REVENUE AT RISK
+          </span>
+          <span style={{ fontFamily: 'var(--font-heading)', fontSize: '32px', fontWeight: 800, color: 'var(--border-black)' }}>
+            ₹{caseData.amountAtRisk.toLocaleString('en-IN')}
+          </span>
+          {caseData.recoveredAmount > 0 && (
+            <div className="neo-badge neo-badge-green" style={{ marginTop: '4px' }}>
+              <span>✓ Won Back: ₹{caseData.recoveredAmount.toLocaleString('en-IN')}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Main 2-Column Split */}
       <div
         style={{
           display: 'grid',
@@ -123,93 +127,151 @@ export const RecoveryDetail: React.FC = () => {
           gap: '24px',
         }}
       >
-        {/* Left Column: AI Diagnostic Panel & Guardrails */}
-        <Box display="flex" flexDirection="column" gap="spacing.5">
+        {/* Left Column: AI Decision Panel & Guardrails */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* AI Decision Panel */}
-          <Card padding="spacing.5">
-            <CardBody>
-              <Box display="flex" flexDirection="column" gap="spacing.4">
-                <Box display="flex" alignItems="center" gap="spacing.3">
-                  <BrainCircuit size={20} color="#8b5cf6" />
-                  <Heading size="medium" weight="semibold" color="surface.text.gray.normal">
-                    AI Decision & Diagnostic Synthesis
-                  </Heading>
-                </Box>
+          <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  border: '2px solid var(--border-black)',
+                  backgroundColor: '#a855f7',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '2px 2px 0px var(--border-black)',
+                }}
+              >
+                <BrainCircuit size={20} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '18px', margin: 0 }}>AI Decision & Diagnostic Synthesis</h3>
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>OpenAI gpt-4o-mini Evaluation</span>
+              </div>
+            </div>
 
-                <Box display="flex" flexDirection="column" gap="spacing.3">
-                  <Box padding="spacing.4" borderRadius="medium" backgroundColor="surface.background.gray.subtle">
-                    <Text size="xsmall" weight="semibold" color="surface.text.gray.muted">
-                      WHY IS THIS REVENUE AT RISK?
-                    </Text>
-                    <Text size="small" weight="medium" color="surface.text.gray.normal">
-                      {caseData.diagnosis?.reasoning || 'Diagnostic synthesis completed via model evaluation.'}
-                    </Text>
-                  </Box>
+            {/* Diagnostic Reasoning Quote */}
+            <div
+              style={{
+                padding: '16px',
+                borderRadius: '14px',
+                border: '2px solid var(--border-black)',
+                backgroundColor: '#fffdfa',
+                boxShadow: '2px 2px 0px var(--border-black)',
+              }}
+            >
+              <div style={{ fontSize: '11px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>
+                ROOT CAUSE DIAGNOSIS
+              </div>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#121316', lineHeight: 1.5 }}>
+                {caseData.diagnosis?.reasoning || 'Evaluated telemetry signatures and identified recoverable payment state.'}
+              </div>
+            </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <Box padding="spacing.4" borderRadius="medium" backgroundColor="surface.background.gray.subtle">
-                      <Text size="xsmall" weight="semibold" color="surface.text.gray.muted">
-                        WINBACK PROBABILITY
-                      </Text>
-                      <Heading size="medium" weight="semibold" color="surface.text.gray.normal">
-                        {Math.round((caseData.recoveryProbability || 0) * 100)}%
-                      </Heading>
-                      <Text size="xsmall" color="surface.text.gray.subtle">
-                        Expected Win: ₹{caseData.expectedRecoveryValue}
-                      </Text>
-                    </Box>
+            {/* Metrics Split */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div
+                style={{
+                  padding: '14px',
+                  borderRadius: '14px',
+                  border: '2px solid var(--border-black)',
+                  backgroundColor: '#fff7d6',
+                  boxShadow: '2px 2px 0px var(--border-black)',
+                }}
+              >
+                <div style={{ fontSize: '11px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#64748b' }}>
+                  WINBACK PROBABILITY
+                </div>
+                <div style={{ fontSize: '24px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#121316' }}>
+                  {Math.round((caseData.recoveryProbability || 0) * 100)}%
+                </div>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>
+                  Expected Win: ₹{caseData.expectedRecoveryValue}
+                </div>
+              </div>
 
-                    <Box padding="spacing.4" borderRadius="medium" backgroundColor="surface.background.gray.subtle">
-                      <Text size="xsmall" weight="semibold" color="surface.text.gray.muted">
-                        RECOMMENDED INTERVENTION
-                      </Text>
-                      <Heading size="medium" weight="semibold" color="surface.text.gray.normal">
-                        {caseData.recommendedAction?.replace(/_/g, ' ') || 'None'}
-                      </Heading>
-                      <Text size="xsmall" color="surface.text.gray.subtle">
-                        Bounded Workflow Action
-                      </Text>
-                    </Box>
-                  </div>
-                </Box>
-              </Box>
-            </CardBody>
-          </Card>
+              <div
+                style={{
+                  padding: '14px',
+                  borderRadius: '14px',
+                  border: '2px solid var(--border-black)',
+                  backgroundColor: '#e0f2fe',
+                  boxShadow: '2px 2px 0px var(--border-black)',
+                }}
+              >
+                <div style={{ fontSize: '11px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#64748b' }}>
+                  RECOMMENDED ACTION
+                </div>
+                <div style={{ fontSize: '16px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#0369a1' }}>
+                  {caseData.recommendedAction?.replace(/_/g, ' ') || 'None'}
+                </div>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>
+                  Autonomous Intervention
+                </div>
+              </div>
+            </div>
+          </div>
 
-          {/* Policy Guardrail Engine Decision */}
-          <Card padding="spacing.5">
-            <CardBody>
-              <Box display="flex" flexDirection="column" gap="spacing.4">
-                <Box display="flex" alignItems="center" gap="spacing.3">
-                  <ShieldAlert size={20} color={caseData.policyDecision?.allowed ? '#10b981' : '#ef4444'} />
-                  <Heading size="medium" weight="semibold" color="surface.text.gray.normal">
-                    Deterministic Policy Guardrail Evaluation
-                  </Heading>
-                </Box>
+          {/* Deterministic Policy Guardrail Engine Decision */}
+          <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  border: '2px solid var(--border-black)',
+                  backgroundColor: caseData.policyDecision?.allowed ? '#22c55e' : '#ff5757',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '2px 2px 0px var(--border-black)',
+                }}
+              >
+                <ShieldAlert size={20} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '18px', margin: 0 }}>Deterministic Guardrail Policy</h3>
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
+                  Financial limits & stopping rule evaluation
+                </span>
+              </div>
+            </div>
 
-                <Box padding="spacing.4" borderRadius="medium" backgroundColor="surface.background.gray.subtle">
-                  <Box display="flex" alignItems="center" gap="spacing.2" marginBottom="spacing.2">
-                    <Badge color={caseData.policyDecision?.allowed ? 'positive' : 'negative'} size="medium">
-                      {caseData.policyDecision?.allowed ? 'POLICY PERMITTED' : 'POLICY BLOCKED'}
-                    </Badge>
-                    {caseData.policyDecision?.checkedAt && (
-                      <Text size="xsmall" color="surface.text.gray.muted">
-                        Evaluated: {new Date(caseData.policyDecision.checkedAt).toLocaleTimeString('en-IN')}
-                      </Text>
-                    )}
-                  </Box>
-                  <Text size="small" color="surface.text.gray.normal">
-                    {caseData.policyDecision?.reason || 'Evaluated against retry limits and auto-action thresholds.'}
-                  </Text>
-                </Box>
-              </Box>
-            </CardBody>
-          </Card>
-        </Box>
+            <div
+              style={{
+                padding: '16px',
+                borderRadius: '14px',
+                border: '2px solid var(--border-black)',
+                backgroundColor: '#ffffff',
+                boxShadow: '2px 2px 0px var(--border-black)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <div className={`neo-badge ${caseData.policyDecision?.allowed ? 'neo-badge-green' : 'neo-badge-coral'}`}>
+                  <span>{caseData.policyDecision?.allowed ? 'POLICY PERMITTED' : 'POLICY BLOCKED'}</span>
+                </div>
+                {caseData.policyDecision?.checkedAt && (
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                    Evaluated: {new Date(caseData.policyDecision.checkedAt).toLocaleTimeString('en-IN')}
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#121316' }}>
+                {caseData.policyDecision?.reason || 'Evaluated against retry limits and auto-action thresholds.'}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Right Column: Immutable Audit Trail */}
         <AuditTimeline entries={caseData.auditTrail || []} />
       </div>
-    </Box>
+    </div>
   );
 };

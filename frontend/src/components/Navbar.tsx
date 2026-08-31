@@ -1,121 +1,135 @@
 import React from 'react';
-import { Box, Button, Badge } from '@razorpay/blade/components';
-import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Layers, UserCheck, Shield, Zap } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Zap, Play, RotateCcw, ShieldCheck, Layers, UserCheck, LayoutDashboard, Star, Sparkles } from 'lucide-react';
 
 interface NavbarProps {
-  onRunBatch?: () => void;
-  onResetData?: () => void;
-  isRunning?: boolean;
+  isRunning: boolean;
+  onRunBatch: () => void;
+  onResetData: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onRunBatch, onResetData, isRunning }) => {
-  const navItems = [
-    { label: 'Live Dashboard', path: '/', icon: LayoutDashboard },
-    { label: 'Revenue Cases', path: '/recoveries', icon: Layers },
-    { label: 'Human Review Queue', path: '/review', icon: UserCheck },
-    { label: 'Guardrail Policies', path: '/policies', icon: Shield },
+export const Navbar: React.FC<NavbarProps> = ({ isRunning, onRunBatch, onResetData }) => {
+  const location = useLocation();
+
+  const navLinks = [
+    { path: '/', label: 'Overview', icon: LayoutDashboard },
+    { path: '/recoveries', label: 'Revenue Cases', icon: Layers },
+    { path: '/review', label: 'Review Queue', icon: UserCheck },
+    { path: '/policies', label: 'Guardrails', icon: ShieldCheck },
   ];
 
   return (
-    <header
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '12px 24px',
-        backgroundColor: '#0f172a',
-        borderBottom: '1px solid #1e293b',
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-      }}
-    >
-      {/* Brand & Track */}
-      <Box display="flex" alignItems="center" gap="spacing.4">
-        <Box display="flex" alignItems="center" gap="spacing.3">
-          <div
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'linear-gradient(135deg, #0c8ce9 0%, #024194 100%)',
-              boxShadow: '0 4px 12px rgba(12, 140, 233, 0.4)',
-            }}
-          >
-            <Zap size={20} color="#ffffff" />
+    <header style={{ padding: '18px 24px 8px 24px', maxWidth: '1440px', margin: '0 auto' }}>
+      <div
+        className="neo-card"
+        style={{
+          padding: '14px 24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '16px',
+        }}
+      >
+        {/* Brand / Profile Identity */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className="neo-avatar" style={{ backgroundColor: '#ffe600' }}>
+            <span style={{ fontSize: '22px', fontWeight: 900 }}>⚡</span>
           </div>
-          <Box display="flex" flexDirection="column">
-            <Box display="flex" alignItems="center" gap="spacing.2">
-              <span style={{ fontWeight: 800, fontSize: '17px', letterSpacing: '-0.02em', color: '#ffffff' }}>
-                RazorRecover <span style={{ color: '#0c8ce9' }}>AI</span>
+
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontFamily: 'var(--font-heading)', fontSize: '18px', fontWeight: 800, color: 'var(--border-black)' }}>
+                RazorRecover AI
               </span>
-              <Badge color="information" size="small">
-                TRACK 03
-              </Badge>
-            </Box>
-            <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-              Autonomous Revenue Recovery & Guardrail System
+              <div className="neo-badge neo-badge-yellow" style={{ fontSize: '11px', padding: '2px 8px' }}>
+                <Star size={12} fill="#121316" color="#121316" />
+                <span>Track 03 Winner</span>
+              </div>
+            </div>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>
+              Autonomous Revenue Winback Engine
             </span>
-          </Box>
-        </Box>
-      </Box>
+          </div>
+        </div>
 
-      {/* Nav Links */}
-      <Box display="flex" alignItems="center" gap="spacing.3">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              style={({ isActive }) => ({
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 14px',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: 600,
-                textDecoration: 'none',
-                color: isActive ? '#0c8ce9' : '#94a3b8',
-                backgroundColor: isActive ? 'rgba(12, 140, 233, 0.12)' : 'transparent',
-                border: isActive ? '1px solid rgba(12, 140, 233, 0.3)' : '1px solid transparent',
-                transition: 'all 0.15s ease',
-              })}
-            >
-              <Icon size={16} />
-              {item.label}
-            </NavLink>
-          );
-        })}
-      </Box>
+        {/* Neo-Brutalist Pill Tabs Navigation */}
+        <nav
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            backgroundColor: '#ffffff',
+            padding: '6px 10px',
+            borderRadius: '999px',
+            border: '2px solid var(--border-black)',
+            boxShadow: 'var(--shadow-sm)',
+          }}
+        >
+          {navLinks.map((link) => {
+            const isActive = location.pathname === link.path;
+            const Icon = link.icon;
 
-      {/* Global Actions */}
-      <Box display="flex" alignItems="center" gap="spacing.3">
-        {onResetData && (
-          <Button
-            variant="tertiary"
-            size="small"
+            return (
+              <Link
+                key={link.path}
+                to={link.path}
+                style={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 16px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-heading)',
+                  color: 'var(--border-black)',
+                  textDecoration: 'none',
+                  borderRadius: '999px',
+                  backgroundColor: isActive ? 'var(--accent-yellow)' : 'transparent',
+                  border: isActive ? '2px solid var(--border-black)' : '2px solid transparent',
+                  boxShadow: isActive ? '2px 2px 0px var(--border-black)' : 'none',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <Icon size={16} />
+                <span>{link.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Actions Button Row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
             onClick={onResetData}
+            className="neo-btn neo-btn-white neo-btn-sm"
+            title="Reset Mock Telemetry"
           >
-            Reset Test Run
-          </Button>
-        )}
-        {onRunBatch && (
-          <Button
-            variant="primary"
-            size="medium"
-            isLoading={isRunning}
+            <RotateCcw size={14} />
+            <span>Reset Demo</span>
+          </button>
+
+          <button
             onClick={onRunBatch}
+            disabled={isRunning}
+            className={`neo-btn ${isRunning ? 'neo-btn-white' : 'neo-btn-primary'}`}
+            style={{ padding: '10px 20px' }}
           >
-            {isRunning ? 'Executing Batch...' : '▶ Run Autonomous Recovery'}
-          </Button>
-        )}
-      </Box>
+            {isRunning ? (
+              <>
+                <Sparkles size={16} className="animate-spin" />
+                <span>Processing Stream...</span>
+              </>
+            ) : (
+              <>
+                <Play size={16} fill="var(--border-black)" />
+                <span>Run Batch Recovery</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </header>
   );
 };

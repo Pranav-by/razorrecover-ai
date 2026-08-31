@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Heading, Text, Badge, Button, Card, CardBody } from '@razorpay/blade/components';
 import { MetricCard } from '../components/MetricCard';
 import { AgentActivity } from '../components/AgentActivity';
 import { RevenueChart } from '../components/RevenueChart';
 import { DashboardSummary, RevenueBreakdown, RecoveryCase, BatchRun } from '../types';
 import { getDashboardSummary, getRevenueBreakdown, getRecoveries, getLatestBatch } from '../services/api';
-import { IndianRupee, ShieldCheck, UserCheck, TrendingUp, AlertTriangle, CheckCircle2, ChevronRight } from 'lucide-react';
+import { IndianRupee, ShieldCheck, UserCheck, TrendingUp, AlertTriangle, Play, Sparkles, ChevronRight, Star, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface DashboardProps {
@@ -57,52 +56,102 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
   };
 
   return (
-    <Box display="flex" flexDirection="column" gap="spacing.7" padding="spacing.7">
-      {/* Top Banner / Announcement */}
-      <Card padding="spacing.5">
-        <CardBody>
-          <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap="spacing.4">
-            <Box display="flex" flexDirection="column" gap="spacing.2">
-              <Box display="flex" alignItems="center" gap="spacing.3">
-                <Heading size="large" weight="semibold" color="surface.text.gray.normal">
-                  Autonomous Revenue Recovery Command Center
-                </Heading>
-                <Badge color={summary.revenueRecovered > 0 ? 'positive' : 'information'} size="medium">
-                  {summary.revenueRecovered > 0 ? 'Active Winback Verified' : 'Detection Engine Active'}
-                </Badge>
-              </Box>
-              <Text size="small" color="surface.text.gray.muted">
-                Official Track 03 Bar: Measured ₹ won back across batch with compliant escalation, explicit stopping rules, and append-only audit trail.
-              </Text>
-            </Box>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '16px 24px 80px 24px' }}>
+      {/* Hero Showcase Card — Inspired by Reference Visual */}
+      <div
+        className="neo-card"
+        style={{
+          padding: '28px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '24px',
+          background: 'linear-gradient(135deg, #fffdfa 0%, #fff7d6 100%)',
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '650px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="neo-badge neo-badge-yellow">
+              <Star size={12} fill="#121316" color="#121316" />
+              <span>Track 03 Autonomous Winback Engine</span>
+            </div>
+            <div className="neo-badge neo-badge-green">
+              <span>{summary.revenueRecovered > 0 ? '✓ Winback Verified' : '● Telemetry Ingest Live'}</span>
+            </div>
+          </div>
 
-            <Button
-              variant="primary"
-              size="large"
-              isLoading={isRunning}
-              onClick={onRunBatch}
-            >
-              {isRunning ? 'Processing Recovery Batch...' : '▶ Run Autonomous Batch Recovery'}
-            </Button>
-          </Box>
-        </CardBody>
-      </Card>
+          <h1 style={{ fontSize: '28px', lineHeight: 1.2, margin: 0 }}>
+            Autonomous Revenue Recovery Command Center
+          </h1>
 
-      {/* Metric Cards Row - Financial Ops Hierarchy */}
+          <p style={{ fontSize: '14px', color: '#475569', fontWeight: 500, margin: 0 }}>
+            Autonomous AI agent pipeline that identifies leaked revenue across checkouts, subscriptions & invoices, evaluates Expected Recovery Value ($Amount \times P$), and settles funds with immutable audit logs.
+          </p>
+        </div>
+
+        {/* Action Button & Telemetry Mini Counter */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className="neo-counter-box">
+              <span style={{ fontFamily: 'var(--font-heading)', fontSize: '20px', fontWeight: 800 }}>
+                {latestBatch?.casesScanned || summary.totalCases || 73}
+              </span>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748b' }}>CASES</span>
+            </div>
+            <span style={{ fontSize: '20px', fontWeight: 800 }}>:</span>
+            <div className="neo-counter-box">
+              <span style={{ fontFamily: 'var(--font-heading)', fontSize: '20px', fontWeight: 800, color: '#22c55e' }}>
+                {summary.recoveryRate}%
+              </span>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748b' }}>WIN %</span>
+            </div>
+            <span style={{ fontSize: '20px', fontWeight: 800 }}>:</span>
+            <div className="neo-counter-box">
+              <span style={{ fontFamily: 'var(--font-heading)', fontSize: '20px', fontWeight: 800, color: '#3b82f6' }}>
+                {summary.activeRecoveries || (latestBatch ? latestBatch.autoActioned : 37)}
+              </span>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748b' }}>ACTIVE</span>
+            </div>
+          </div>
+
+          <button
+            onClick={onRunBatch}
+            disabled={isRunning}
+            className="neo-btn neo-btn-primary neo-btn-lg"
+            style={{ width: '100%' }}
+          >
+            {isRunning ? (
+              <>
+                <Sparkles size={18} className="animate-spin" />
+                <span>Processing Autonomous Batch...</span>
+              </>
+            ) : (
+              <>
+                <Play size={18} fill="#121316" />
+                <span>▶ Run Autonomous Recovery Run</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Metric Cards Row */}
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '20px',
+          gap: '18px',
         }}
       >
         <MetricCard
           label="REVENUE RECOVERED"
           value={formatRupees(summary.revenueRecovered)}
-          subtitle={summary.revenueRecovered > 0 ? 'Verified in merchant account' : 'Ready to execute recovery run'}
-          badgeText={summary.recoveryRate > 0 ? `${summary.recoveryRate}% Recovery Rate` : undefined}
+          subtitle={summary.revenueRecovered > 0 ? 'Verified in merchant settlement' : 'Ready to execute recovery run'}
+          badgeText={summary.recoveryRate > 0 ? `${summary.recoveryRate}% Winback` : 'Measured ₹'}
           badgeVariant="positive"
-          icon={<IndianRupee size={20} color="#10b981" />}
+          accentColor="#ffe600"
+          icon={<IndianRupee size={18} color="#121316" />}
         />
 
         <MetricCard
@@ -111,16 +160,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
           subtitle="Detected in transaction stream"
           badgeText="At Risk"
           badgeVariant="negative"
-          icon={<AlertTriangle size={20} color="#ef4444" />}
+          accentColor="#ff5757"
+          icon={<AlertTriangle size={18} color="#ffffff" />}
         />
 
         <MetricCard
           label="WINBACK RATE"
           value={`${summary.recoveryRate}%`}
           subtitle="Recovered / Total at risk"
-          badgeText={summary.recoveryRate > 0 ? 'Measured' : 'Baseline 0%'}
-          badgeVariant={summary.recoveryRate > 0 ? 'positive' : 'neutral'}
-          icon={<TrendingUp size={20} color="#3b82f6" />}
+          badgeText={summary.recoveryRate > 0 ? 'Success' : '0% Baseline'}
+          badgeVariant={summary.recoveryRate > 0 ? 'positive' : 'information'}
+          accentColor="#38bdf8"
+          icon={<TrendingUp size={18} color="#121316" />}
         />
 
         <MetricCard
@@ -129,24 +180,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
           subtitle="Autonomous interventions"
           badgeText="Bounded"
           badgeVariant="information"
-          icon={<ShieldCheck size={20} color="#8b5cf6" />}
+          accentColor="#a855f7"
+          icon={<ShieldCheck size={18} color="#ffffff" />}
         />
 
         <MetricCard
           label="HUMAN REVIEW QUEUE"
           value={summary.humanReviews || (latestBatch ? latestBatch.humanReviewRequired : 9)}
           subtitle="Guardrail escalation hold"
-          badgeText={summary.humanReviews > 0 ? 'Review Needed' : 'No Blockers'}
-          badgeVariant={summary.humanReviews > 0 ? 'notice' : 'neutral'}
-          icon={<UserCheck size={20} color="#f59e0b" />}
+          badgeText={summary.humanReviews > 0 ? 'Review Needed' : 'Queue Clear'}
+          badgeVariant={summary.humanReviews > 0 ? 'notice' : 'positive'}
+          accentColor="#f97316"
+          icon={<UserCheck size={18} color="#ffffff" />}
         />
       </div>
 
-      {/* Main Split: Analytics & Live Agent Activity */}
+      {/* Analytics & Live Agent Pipeline */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))',
           gap: '24px',
         }}
       >
@@ -158,110 +211,155 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
         />
       </div>
 
-      {/* Recent Recovered Transactions Table */}
-      <Card padding="spacing.5">
-        <CardBody>
-          <Box display="flex" flexDirection="column" gap="spacing.5">
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Box display="flex" alignItems="center" gap="spacing.3">
-                <CheckCircle2 size={20} color="#10b981" />
-                <Heading size="medium" weight="semibold" color="surface.text.gray.normal">
-                  Recent Revenue Interventions & Status
-                </Heading>
-              </Box>
-              <Link to="/recoveries" style={{ textDecoration: 'none' }}>
-                <Button variant="tertiary" size="small">
-                  View All Revenue Cases
-                </Button>
-              </Link>
-            </Box>
+      {/* Recent Recovered Transactions Table in Neo-Brutalist Style */}
+      <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3 style={{ fontSize: '18px', margin: 0 }}>Recent Revenue Recovery Interventions</h3>
+            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
+              Live telemetry stream of AI diagnoses, expected values, and settlement statuses
+            </span>
+          </div>
 
-            {recentCases && recentCases.length > 0 ? (
-              <div style={{ width: '100%', overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid #334155', color: '#94a3b8' }}>
-                      <th style={{ padding: '12px 16px' }}>Case ID</th>
-                      <th style={{ padding: '12px 16px' }}>Customer</th>
-                      <th style={{ padding: '12px 16px' }}>Scenario</th>
-                      <th style={{ padding: '12px 16px' }}>Amount at Risk</th>
-                      <th style={{ padding: '12px 16px' }}>Winback Prob.</th>
-                      <th style={{ padding: '12px 16px' }}>Intervention</th>
-                      <th style={{ padding: '12px 16px' }}>Status</th>
-                      <th style={{ padding: '12px 16px' }}>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentCases.map((item) => {
-                      let badgeColor: 'positive' | 'negative' | 'information' | 'notice' | 'neutral' = 'information';
-                      if (item.status === 'RECOVERED') badgeColor = 'positive';
-                      else if (item.status === 'BLOCKED' || item.status === 'HALTED' || item.status === 'FAILED') badgeColor = 'negative';
-                      else if (item.status === 'HUMAN_REVIEW' || item.status === 'PAUSED') badgeColor = 'notice';
+          <Link to="/recoveries" className="neo-btn neo-btn-white neo-btn-sm">
+            <span>View All Cases</span>
+            <ChevronRight size={14} />
+          </Link>
+        </div>
 
-                      return (
-                        <tr
-                          key={item._id}
+        {recentCases && recentCases.length > 0 ? (
+          <div style={{ width: '100%', overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ borderBottom: '2.5px solid var(--border-black)', color: '#121316', fontFamily: 'var(--font-heading)', fontWeight: 800 }}>
+                  <th style={{ padding: '12px 14px' }}>Case ID</th>
+                  <th style={{ padding: '12px 14px' }}>Customer</th>
+                  <th style={{ padding: '12px 14px' }}>Scenario</th>
+                  <th style={{ padding: '12px 14px' }}>Amount at Risk</th>
+                  <th style={{ padding: '12px 14px' }}>Winback Prob.</th>
+                  <th style={{ padding: '12px 14px' }}>Recommended Action</th>
+                  <th style={{ padding: '12px 14px' }}>Status</th>
+                  <th style={{ padding: '12px 14px' }}>Detail</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentCases.map((item, idx) => {
+                  let badgeClass = 'neo-badge-blue';
+                  if (item.status === 'RECOVERED') badgeClass = 'neo-badge-green';
+                  else if (item.status === 'BLOCKED' || item.status === 'HALTED' || item.status === 'FAILED') badgeClass = 'neo-badge-coral';
+                  else if (item.status === 'HUMAN_REVIEW' || item.status === 'PAUSED') badgeClass = 'neo-badge-yellow';
+
+                  return (
+                    <tr
+                      key={item._id || idx}
+                      style={{
+                        borderBottom: '1.5px solid #e2e8f0',
+                        backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fffdfa',
+                      }}
+                    >
+                      <td style={{ padding: '12px 14px' }}>
+                        <Link to={`/recoveries/${item.caseId}`} style={{ color: '#121316', fontWeight: 800, fontFamily: 'var(--font-heading)', textDecoration: 'none' }}>
+                          {item.caseId}
+                        </Link>
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div
+                            style={{
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '50%',
+                              backgroundColor: '#fff7d6',
+                              border: '1.5px solid var(--border-black)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '12px',
+                              fontWeight: 800,
+                            }}
+                          >
+                            {item.customerName ? item.customerName.charAt(0) : 'C'}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 700, color: '#121316' }}>{item.customerName}</div>
+                            <div style={{ fontSize: '11px', color: '#64748b' }}>{item.customerId}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <div className="neo-badge" style={{ fontSize: '10px', padding: '2px 8px' }}>
+                          {item.scenario.replace(/_/g, ' ').toUpperCase()}
+                        </div>
+                      </td>
+                      <td style={{ padding: '12px 14px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#121316' }}>
+                        ₹{item.amountAtRisk.toLocaleString('en-IN')}
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontWeight: 800, color: '#2563eb', fontFamily: 'var(--font-heading)' }}>
+                            {Math.round((item.recoveryProbability || 0) * 100)}%
+                          </span>
+                          <span style={{ fontSize: '10px', color: '#64748b' }}>EV: ₹{item.expectedRecoveryValue || 0}</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <div className="neo-badge neo-badge-yellow" style={{ fontSize: '10px', padding: '2px 8px' }}>
+                          {item.recommendedAction ? item.recommendedAction.replace(/_/g, ' ') : 'Analyzing'}
+                        </div>
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <div className={`neo-badge ${badgeClass}`} style={{ fontSize: '10px', padding: '2px 8px' }}>
+                          {item.status}
+                        </div>
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <Link
+                          to={`/recoveries/${item.caseId}`}
                           style={{
-                            borderBottom: '1px solid rgba(51, 65, 85, 0.5)',
-                            transition: 'background-color 0.15s ease',
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '8px',
+                            border: '1.5px solid var(--border-black)',
+                            backgroundColor: '#ffe600',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '1px 1px 0px var(--border-black)',
                           }}
                         >
-                          <td style={{ padding: '14px 16px' }}>
-                            <Link to={`/recoveries/${item.caseId}`} style={{ color: '#0c8ce9', fontWeight: 700, textDecoration: 'none' }}>
-                              {item.caseId}
-                            </Link>
-                          </td>
-                          <td style={{ padding: '14px 16px' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              <span style={{ fontWeight: 600, color: '#f8fafc' }}>{item.customerName}</span>
-                              <span style={{ fontSize: '11px', color: '#64748b' }}>{item.customerId}</span>
-                            </div>
-                          </td>
-                          <td style={{ padding: '14px 16px' }}>
-                            <Badge color="neutral" size="small">
-                              {item.scenario.replace(/_/g, ' ').toUpperCase()}
-                            </Badge>
-                          </td>
-                          <td style={{ padding: '14px 16px', fontWeight: 700, color: '#f8fafc' }}>
-                            ₹{item.amountAtRisk.toLocaleString('en-IN')}
-                          </td>
-                          <td style={{ padding: '14px 16px' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              <span style={{ fontWeight: 600, color: '#38bdf8' }}>{Math.round((item.recoveryProbability || 0) * 100)}%</span>
-                              <span style={{ fontSize: '11px', color: '#64748b' }}>EV: ₹{item.expectedRecoveryValue || 0}</span>
-                            </div>
-                          </td>
-                          <td style={{ padding: '14px 16px' }}>
-                            <Badge color="information" size="small">
-                              {item.recommendedAction ? item.recommendedAction.replace(/_/g, ' ') : 'Analyzing'}
-                            </Badge>
-                          </td>
-                          <td style={{ padding: '14px 16px' }}>
-                            <Badge color={badgeColor} size="small">
-                              {item.status}
-                            </Badge>
-                          </td>
-                          <td style={{ padding: '14px 16px' }}>
-                            <Link to={`/recoveries/${item.caseId}`}>
-                              <ChevronRight size={18} color="#94a3b8" />
-                            </Link>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <Box padding="spacing.7" display="flex" flexDirection="column" alignItems="center" justifyContent="center" gap="spacing.3">
-                <Text size="medium" color="surface.text.gray.muted">
-                  No active recovery batch records yet. Click "Run Autonomous Batch Recovery" to start detection & execution.
-                </Text>
-              </Box>
-            )}
-          </Box>
-        </CardBody>
-      </Card>
-    </Box>
+                          <ChevronRight size={16} color="#121316" />
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{ padding: '36px', textAlign: 'center', color: '#64748b' }}>
+            No active recovery batch records yet. Click "Run Autonomous Recovery Run" above to start detection & execution.
+          </div>
+        )}
+      </div>
+
+      {/* Floating Action Button (+) — Inspired by Reference */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: '28px',
+          right: '28px',
+          zIndex: 99,
+        }}
+      >
+        <button
+          onClick={onRunBatch}
+          className="neo-fab"
+          title="Run Autonomous Batch Recovery"
+        >
+          <Plus size={28} strokeWidth={3} />
+        </button>
+      </div>
+    </div>
   );
 };
