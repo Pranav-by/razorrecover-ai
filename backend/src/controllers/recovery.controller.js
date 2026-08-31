@@ -492,6 +492,43 @@ class RecoveryController {
       });
     } catch (err) { next(err); }
   }
+
+  /**
+   * DELETE /api/test-cases/:id or /api/recoveries/:id
+   * Manually deletes a test case or transaction from the database
+   */
+  static async deleteTestCase(req, res, next) {
+    try {
+      const { id } = req.params;
+      const Transaction = require('../models/Transaction');
+      const AuditLog = require('../models/AuditLog');
+      const mongoose = require('mongoose');
+
+      let query = { $or: [{ caseId: id }, { paymentId: id }] };
+      if (mongoose.Types.ObjectId.isValid(id)) {
+        query.$or.push({ _id: id });
+        query.$or.push({ transactionId: id });
+      }
+
+      const rCase = await RecoveryCase.findOne(query);
+      if (rCase) {
+        if (rCase.transactionId) {
+          await Transaction.deleteOne({ _id: rCase.transactionId });
+        }
+        await AuditLog.deleteMany({ recoveryCaseId: rCase._id });
+        await RecoveryCase.deleteOne({ _id: rCase._id });
+      } else {
+        let txnQuery = { $or: [{ paymentId: id }] };
+        if (mongoose.Types.ObjectId.isValid(id)) {
+          txnQuery.$or.push({ _id: id });
+        }
+        await Transaction.deleteOne(txnQuery);
+      }
+
+      res.status(200).json({ success: true, message: `Case ${id} deleted successfully` });
+    } catch (err) { next(err); }
+  }
 }
 
 module.exports = RecoveryController;
+

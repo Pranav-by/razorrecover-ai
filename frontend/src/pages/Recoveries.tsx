@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { RecoveryCase } from '../types';
-import { getRecoveries, getTestCases, createTestCase, executeTestCase, exportAuditMatrix } from '../services/api';
-import { Layers, Filter, Search, ChevronRight, Download, Star, Play, Sparkles, X, CheckCircle2, ShieldAlert, Plus, Terminal, FlaskConical, BrainCircuit, ShieldCheck, ArrowRight } from 'lucide-react';
+import { getRecoveries, getTestCases, createTestCase, executeTestCase, deleteTestCase, exportAuditMatrix } from '../services/api';
+import { Layers, Filter, Search, ChevronRight, Download, Star, Play, Sparkles, X, CheckCircle2, ShieldAlert, Plus, Terminal, FlaskConical, BrainCircuit, ShieldCheck, ArrowRight, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Recoveries: React.FC = () => {
@@ -34,8 +34,23 @@ export const Recoveries: React.FC = () => {
 
   // Single Execution State & Benchmark Results
   const [executingCaseId, setExecutingCaseId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [singleExecutionResult, setSingleExecutionResult] = useState<any | null>(null);
   const [benchmarkResults, setBenchmarkResults] = useState<{ [id: string]: { status: string; badgeClass: string; detail: string } }>({});
+
+  const handleDeleteCase = async (id: string) => {
+    if (!window.confirm(`Are you sure you want to delete case/transaction ${id}?`)) return;
+    setDeletingId(id);
+    try {
+      await deleteTestCase(id);
+      setCases(prev => prev.filter(c => c.caseId !== id && (c as any)._id !== id && (c as any).paymentId !== id));
+      setTotal(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error('Error deleting test case:', err);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const CANONICAL_BENCHMARKS = [
     {
@@ -400,9 +415,20 @@ export const Recoveries: React.FC = () => {
                       to={`/recoveries/${tc.caseId}`}
                       className="neo-btn neo-btn-sm neo-btn-white"
                       style={{ padding: '6px 10px' }}
+                      title="Inspect full audit & diagnosis"
                     >
                       <span>🔍 Inspect</span>
                     </Link>
+
+                    <button
+                      onClick={() => handleDeleteCase(tc.caseId || tc._id)}
+                      disabled={deletingId === tc.caseId || deletingId === tc._id}
+                      className="neo-btn neo-btn-sm"
+                      style={{ padding: '6px 8px', backgroundColor: '#fee2e2' }}
+                      title="Delete test case"
+                    >
+                      <Trash2 size={14} color="#dc2626" />
+                    </button>
                   </div>
                 </div>
               );
@@ -697,23 +723,45 @@ export const Recoveries: React.FC = () => {
                       </button>
                     </td>
                     <td style={{ padding: '12px 14px' }}>
-                      <Link
-                        to={`/recoveries/${item.caseId}`}
-                        style={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '8px',
-                          border: '1.5px solid var(--border-black)',
-                          backgroundColor: '#ffe600',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: '1px 1px 0px var(--border-black)',
-                        }}
-                        title="Inspect AI diagnosis, guardrails, & immutable audit trail"
-                      >
-                        <ChevronRight size={18} color="#121316" />
-                      </Link>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Link
+                          to={`/recoveries/${item.caseId}`}
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '8px',
+                            border: '1.5px solid var(--border-black)',
+                            backgroundColor: '#ffe600',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '1px 1px 0px var(--border-black)',
+                          }}
+                          title="Inspect AI diagnosis, guardrails, & immutable audit trail"
+                        >
+                          <ChevronRight size={18} color="#121316" />
+                        </Link>
+
+                        <button
+                          onClick={() => handleDeleteCase(item.caseId || (item as any)._id)}
+                          disabled={deletingId === item.caseId || deletingId === (item as any)._id}
+                          className="neo-btn neo-btn-sm"
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            padding: 0,
+                            backgroundColor: '#fee2e2',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            border: '1.5px solid var(--border-black)',
+                            boxShadow: '1px 1px 0px var(--border-black)',
+                          }}
+                          title="Manually delete this test case record"
+                        >
+                          <Trash2 size={14} color="#dc2626" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

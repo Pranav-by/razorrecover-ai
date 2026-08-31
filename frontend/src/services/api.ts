@@ -103,4 +103,9 @@ export const exportAuditMatrix = async (format: 'csv' | 'json' = 'csv'): Promise
   }
 };
 
+export const deleteTestCase = async (id: string): Promise<any> => {
+  const { data } = await API.delete(`/test-cases/${id}`);
+  return data;
+};
+
 export default API;
