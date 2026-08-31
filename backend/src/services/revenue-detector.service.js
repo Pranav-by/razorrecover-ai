@@ -8,13 +8,12 @@ let caseCounter = 0;
 
 /**
  * Revenue Detection Agent
- * Scans transactions and creates recovery cases for revenue at risk.
- * Deduplicates by paymentId — won't create duplicate cases.
+ * Scans transactions and creates/refreshes recovery cases for revenue at risk.
  */
 class RevenueDetectorService {
   /**
-   * Scan all non-successful transactions and create recovery cases.
-   * Returns array of created recovery cases.
+   * Scan all non-successful transactions and retrieve/create recovery cases.
+   * Returns array of recovery cases ready for autonomous processing.
    */
   static async detectAll(batchId) {
     logger.agent('REVENUE_DETECTOR', 'Starting scan for revenue at risk...');
@@ -29,14 +28,17 @@ class RevenueDetectorService {
 
     const cases = [];
     for (const txn of atRiskTransactions) {
-      // Dedup: check if case already exists for this payment
-      const existing = await RecoveryCase.findOne({
-        transactionId: txn._id,
-        status: { $nin: ['RECOVERED', 'REJECTED', 'HALTED', 'UNRECOVERABLE'] }
-      });
+      // Check if case already exists for this payment
+      let recoveryCase = await RecoveryCase.findOne({ transactionId: txn._id });
 
-      if (existing) {
-        logger.debug(`Skipping duplicate case for ${txn.paymentId}`);
+      if (recoveryCase) {
+        // If existing case is already terminal, but batch is run, reset to processable state
+        if (['RECOVERED', 'REJECTED', 'HALTED', 'UNRECOVERABLE'].includes(recoveryCase.status)) {
+          // Keep it as is if already recovered, or re-evaluate
+        }
+        recoveryCase.batchId = batchId;
+        await recoveryCase.save();
+        cases.push(recoveryCase);
         continue;
       }
 
@@ -46,7 +48,7 @@ class RevenueDetectorService {
       const expectedValue = Math.round(txn.amount * probability);
 
       caseCounter++;
-      const recoveryCase = await RecoveryCase.create({
+      recoveryCase = await RecoveryCase.create({
         caseId: `RC_${String(caseCounter).padStart(4, '0')}`,
         transactionId: txn._id,
         customerId: txn.customerId,
@@ -82,7 +84,7 @@ class RevenueDetectorService {
       cases.push(recoveryCase);
     }
 
-    logger.agent('REVENUE_DETECTOR', `Created ${cases.length} recovery cases`);
+    logger.agent('REVENUE_DETECTOR', `Identified ${cases.length} active recovery cases for batch processing`);
     return cases;
   }
 
@@ -94,20 +96,20 @@ class RevenueDetectorService {
 
     // Scenario adjustments
     if (txn.scenario === 'payment_failure') {
-      if (['upi_timeout', 'network_error'].includes(txn.failureReason)) prob = 0.85;
+      if (['upi_timeout', 'network_error'].includes(txn.failureReason)) prob = 0.88;
       else if (txn.failureReason === 'bank_decline') prob = 0.65;
-      else if (txn.failureReason === 'insufficient_funds') prob = 0.35;
-      else if (txn.failureReason === 'expired_card') prob = 0.70;
-      else if (txn.failureReason === 'authentication_failure') prob = 0.45;
+      else if (txn.failureReason === 'insufficient_funds') prob = 0.40;
+      else if (txn.failureReason === 'expired_card') prob = 0.75;
+      else if (txn.failureReason === 'authentication_failure') prob = 0.50;
     } else if (txn.scenario === 'checkout_abandonment') {
       const events = txn.checkoutEvents || [];
-      if (events.includes('payment_page_opened')) prob = 0.75;
-      else if (events.includes('checkout_started')) prob = 0.55;
-      else prob = 0.30;
+      if (events.includes('payment_page_opened')) prob = 0.80;
+      else if (events.includes('checkout_started')) prob = 0.60;
+      else prob = 0.35;
     } else if (txn.scenario === 'subscription_failure') {
-      prob = txn.failureReason === 'expired_card' ? 0.70 : 0.55;
+      prob = txn.failureReason === 'expired_card' ? 0.78 : 0.60;
     } else if (txn.scenario === 'invoice_overdue') {
-      prob = 0.60;
+      prob = 0.65;
     }
 
     // Customer history adjustments
@@ -115,7 +117,7 @@ class RevenueDetectorService {
       if (customer.successfulPayments > 5) prob = Math.min(prob + 0.10, 0.98);
       if (customer.successfulPayments > 10) prob = Math.min(prob + 0.05, 0.98);
       if (customer.riskLevel === 'high') prob = Math.max(prob - 0.15, 0.10);
-      if (customer.optedOut) prob = 0; // can't recover if opted out
+      if (customer.optedOut) prob = 0;
     }
 
     // Attempt adjustments
@@ -130,15 +132,12 @@ class RevenueDetectorService {
    */
   static _calculatePriority(txn, customer, probability) {
     const expectedValue = txn.amount * probability;
-    // Normalize: ₹50,000 expected value = ~90 priority
     let priority = Math.min(Math.round((expectedValue / 50000) * 90), 95);
 
-    // Urgency boost for recent events
     const hoursOld = (Date.now() - new Date(txn.createdAt).getTime()) / (1000 * 60 * 60);
     if (hoursOld < 1) priority = Math.min(priority + 10, 99);
     else if (hoursOld < 24) priority = Math.min(priority + 5, 99);
 
-    // Customer value boost
     if (customer && customer.totalSpend > 100000) priority = Math.min(priority + 5, 99);
 
     return Math.max(priority, 1);

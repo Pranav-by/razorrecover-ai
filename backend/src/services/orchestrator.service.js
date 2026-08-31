@@ -46,41 +46,36 @@ class OrchestratorService {
     try {
       // Step 1: DETECT — Scan for revenue at risk
       logger.info('\n── Step 1: REVENUE DETECTION ──');
-      const cases = await RevenueDetectorService.detectAll(batchId);
-      batchRun.casesScanned = cases.length;
-      batchRun.totalRevenueAtRisk = cases.reduce((sum, c) => sum + c.amountAtRisk, 0);
+      const allCases = await RevenueDetectorService.detectAll(batchId);
+      
+      // Select a representative batch of up to 60 cases across both auto-actionable (<= 10k) and review (> 10k) tiers
+      const autoCases = allCases.filter(c => c.amountAtRisk <= 10000).slice(0, 40);
+      const reviewCases = allCases.filter(c => c.amountAtRisk > 10000).slice(0, 15);
+      const casesToProcess = [...autoCases, ...reviewCases];
 
-      if (cases.length === 0) {
-        logger.info('No revenue at risk detected.');
-        batchRun.status = 'completed';
-        batchRun.completedAt = new Date();
-        await batchRun.save();
-        return this._formatBatchResult(batchRun);
-      }
+      batchRun.casesScanned = allCases.length;
+      batchRun.totalRevenueAtRisk = casesToProcess.reduce((sum, c) => sum + c.amountAtRisk, 0);
 
-      // Step 2: DIAGNOSE — AI diagnosis for each case
-      logger.info('\n── Step 2: AI DIAGNOSIS ──');
-      for (const recoveryCase of cases) {
-        await DiagnosisService.diagnose(recoveryCase, batchId);
-      }
+      // Step 2: DIAGNOSE — Parallel AI diagnosis
+      logger.info('\n── Step 2: AI DIAGNOSIS (Parallel Batch) ──');
+      await Promise.all(casesToProcess.map(c => DiagnosisService.diagnose(c, batchId)));
 
       // Step 3: PRIORITIZE — Rank by expected recovery value
       logger.info('\n── Step 3: PRIORITY RANKING ──');
-      const refreshedCases = await RecoveryCase.find({ batchId });
-      const ranked = PriorityService.rankCases(refreshedCases);
+      const ranked = PriorityService.rankCases(casesToProcess);
 
-      // Step 4: STRATEGIZE — Select intervention for each case
+      // Step 4: STRATEGY — Parallel strategy selection
       logger.info('\n── Step 4: STRATEGY SELECTION ──');
-      for (const recoveryCase of ranked) {
+      await Promise.all(ranked.map(recoveryCase => {
         const diagnosis = {
           diagnosis: recoveryCase.diagnosis,
           recovery: { action: recoveryCase.recommendedAction }
         };
-        await StrategyService.selectStrategy(recoveryCase, diagnosis, batchId);
-      }
+        return StrategyService.selectStrategy(recoveryCase, diagnosis, batchId);
+      }));
 
-      // Steps 5-8: For each case, run through stopping → policy → comply → act → verify
-      logger.info('\n── Step 5-8: EXECUTION PIPELINE ──');
+      // Steps 5-8: Sequential guardrails & execution pipeline
+      logger.info('\n── Step 5-8: EXECUTION & VERIFICATION PIPELINE ──');
       let autoActioned = 0;
       let humanReview = 0;
       let blockedByPolicy = 0;
@@ -93,8 +88,6 @@ class OrchestratorService {
         const recoveryCase = ranked[i];
         batchRun.lastProcessedCaseIndex = i + 1;
 
-        logger.info(`\n  ┌─ Case ${recoveryCase.caseId}: ₹${recoveryCase.amountAtRisk} (${recoveryCase.scenario})`);
-
         // Step 5: STOPPING RULES (checked FIRST)
         const stopResult = await StoppingRulesService.check(recoveryCase, batchId);
         if (stopResult.stopped) {
@@ -104,7 +97,7 @@ class OrchestratorService {
           continue;
         }
 
-        // Step 6: POLICY ENGINE
+        // Step 6: POLICY ENGINE (Auto-action limits & retry caps)
         const policyResult = await PolicyService.check(recoveryCase, batchId);
         if (!policyResult.allowed) {
           blockedByPolicy++;
@@ -135,7 +128,7 @@ class OrchestratorService {
         const actionResult = await ActionService.execute(recoveryCase, batchId);
         autoActioned++;
 
-        // Step 8b: VERIFY OUTCOME
+        // Step 8b: VERIFY OUTCOME & SETTLE
         const verifyResult = await VerificationService.verify(recoveryCase, actionResult, batchId);
 
         if (verifyResult.verified) {
@@ -149,7 +142,7 @@ class OrchestratorService {
         }
       }
 
-      // Update batch run
+      // Update batch run telemetry
       batchRun.recoverableCases = ranked.filter(c => c.recoveryProbability > 0.3).length;
       batchRun.autoActioned = autoActioned;
       batchRun.humanReviewRequired = humanReview;
@@ -200,8 +193,6 @@ class OrchestratorService {
     return {
       batchId: batchRun.batchId,
       status: batchRun.status,
-      startedAt: batchRun.startedAt,
-      completedAt: batchRun.completedAt,
       casesScanned: batchRun.casesScanned,
       totalRevenueAtRisk: batchRun.totalRevenueAtRisk,
       recoverableCases: batchRun.recoverableCases,
@@ -212,7 +203,9 @@ class OrchestratorService {
       stoppedByStoppingRules: batchRun.stoppedByStoppingRules,
       verifiedRecoveredAmount: batchRun.verifiedRecoveredAmount,
       pendingVerificationAmount: batchRun.pendingVerificationAmount,
-      recoveryRatePercent: batchRun.recoveryRatePercent
+      recoveryRatePercent: batchRun.recoveryRatePercent,
+      startedAt: batchRun.startedAt,
+      completedAt: batchRun.completedAt
     };
   }
 }
