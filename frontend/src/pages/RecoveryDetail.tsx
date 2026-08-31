@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { RecoveryCase } from '../types';
-import { getRecoveryById, approveReviewCase, rejectReviewCase } from '../services/api';
+import { getRecoveryById, approveReviewCase, rejectReviewCase, executeTestCase } from '../services/api';
 import { AuditTimeline } from '../components/AuditTimeline';
-import { ArrowLeft, BrainCircuit, ShieldAlert, CheckCircle2, AlertOctagon, Star } from 'lucide-react';
+import { ArrowLeft, BrainCircuit, ShieldAlert, CheckCircle2, AlertOctagon, Play, Sparkles, ShieldCheck } from 'lucide-react';
 
 export const RecoveryDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [caseData, setCaseData] = useState<RecoveryCase | null>(null);
   const [loading, setLoading] = useState(true);
+  const [executing, setExecuting] = useState(false);
 
   const fetchDetail = async () => {
     if (!id) return;
@@ -39,6 +40,19 @@ export const RecoveryDetail: React.FC = () => {
     fetchDetail();
   };
 
+  const handleExecuteNow = async () => {
+    if (!id || !caseData) return;
+    try {
+      setExecuting(true);
+      await executeTestCase(caseData.caseId || id);
+      await fetchDetail();
+    } catch (err) {
+      console.error('Error executing case:', err);
+    } finally {
+      setExecuting(false);
+    }
+  };
+
   if (loading || !caseData) {
     return (
       <div style={{ padding: '60px 24px', textAlign: 'center', fontFamily: 'var(--font-heading)', fontSize: '18px', fontWeight: 700 }}>
@@ -52,25 +66,99 @@ export const RecoveryDetail: React.FC = () => {
   else if (caseData.status === 'BLOCKED' || caseData.status === 'HALTED' || caseData.status === 'FAILED') statusBadgeClass = 'neo-badge-coral';
   else if (caseData.status === 'HUMAN_REVIEW' || caseData.status === 'PAUSED') statusBadgeClass = 'neo-badge-yellow';
 
+  // Compute clean candidate strategy action
+  const candidateAction = caseData.recommendedAction
+    ? caseData.recommendedAction.replace(/_/g, ' ').toUpperCase()
+    : caseData.scenario === 'payment_failure'
+    ? 'RETRY PAYMENT'
+    : caseData.scenario === 'checkout_abandonment'
+    ? 'GENERATE LINK'
+    : caseData.scenario === 'subscription_failure'
+    ? 'UPDATE METHOD'
+    : 'SEND REMINDER';
+
+  // Compute policy status indicator text
+  let policyStatusSubtext = '● Awaiting Policy Engine Evaluation';
+  if (caseData.policyDecision) {
+    policyStatusSubtext = caseData.policyDecision.allowed ? '✓ Policy Approved' : '❌ Policy Blocked / Held';
+  } else if (caseData.status === 'RECOVERED') {
+    policyStatusSubtext = '✓ Policy Approved & Verified';
+  }
+
+  // Compute Guardrail Policy Box details
+  let policyBg = '#ffe600';
+  let policyBadgeClass = 'neo-badge-yellow';
+  let policyTitle = 'AWAITING EVALUATION';
+  let policyReason = caseData.policyDecision?.reason;
+
+  if (caseData.policyDecision) {
+    if (caseData.policyDecision.allowed) {
+      policyBg = '#22c55e';
+      policyBadgeClass = 'neo-badge-green';
+      policyTitle = 'POLICY PERMITTED (APPROVED)';
+    } else {
+      policyBg = '#ff5757';
+      policyBadgeClass = 'neo-badge-coral';
+      policyTitle = 'POLICY BLOCKED (HELD FOR REVIEW)';
+    }
+  } else if (caseData.status === 'RECOVERED') {
+    policyBg = '#22c55e';
+    policyBadgeClass = 'neo-badge-green';
+    policyTitle = 'POLICY PERMITTED (APPROVED)';
+    policyReason = 'Evaluated against retry limits and auto-action thresholds. Autonomous action approved and verified.';
+  } else {
+    policyReason = 'Case is currently in DETECTED state. Click "⚡ Run Pipeline on Case" to evaluate Policy Engine rules (POL-01 to POL-09) and stopping rules.';
+  }
+
+  // Compute AI diagnosis details
+  const hasDiagnosis = !!caseData.diagnosis?.category;
+  const categoryText = (caseData.diagnosis?.category || (caseData.scenario === 'payment_failure' ? 'temporary_failure' : caseData.scenario === 'checkout_abandonment' ? 'high_intent_abandonment' : caseData.scenario === 'subscription_failure' ? 'payment_method_issue' : 'b2b_receivable')).replace(/_/g, ' ').toUpperCase();
+  const confidenceScore = caseData.diagnosis?.confidence
+    ? Math.round(caseData.diagnosis.confidence * 100)
+    : (caseData.recoveryProbability ? Math.round(caseData.recoveryProbability * 100) : 85);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '16px 24px 80px 24px' }}>
-      {/* Top Nav Link */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      {/* Top Nav & Action Buttons */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <Link to="/recoveries" className="neo-btn neo-btn-white neo-btn-sm">
           <ArrowLeft size={14} />
           <span>Back to Revenue Cases</span>
         </Link>
 
-        {caseData.status === 'HUMAN_REVIEW' && (
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={handleReject} className="neo-btn neo-btn-coral neo-btn-sm">
-              Reject Action
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          {caseData.status !== 'RECOVERED' && (
+            <button
+              onClick={handleExecuteNow}
+              disabled={executing}
+              className="neo-btn neo-btn-sm"
+              style={{ backgroundColor: '#c4f0c2', fontWeight: 800 }}
+            >
+              {executing ? (
+                <>
+                  <Sparkles size={14} className="animate-spin" />
+                  <span>Evaluating Pipeline...</span>
+                </>
+              ) : (
+                <>
+                  <Play size={14} fill="#121316" />
+                  <span>⚡ Run Pipeline on Case</span>
+                </>
+              )}
             </button>
-            <button onClick={handleApprove} className="neo-btn neo-btn-green neo-btn-sm">
-              Approve Intervention
-            </button>
-          </div>
-        )}
+          )}
+
+          {caseData.status === 'HUMAN_REVIEW' && (
+            <>
+              <button onClick={handleReject} className="neo-btn neo-btn-coral neo-btn-sm">
+                Reject Action
+              </button>
+              <button onClick={handleApprove} className="neo-btn neo-btn-green neo-btn-sm">
+                Approve Intervention
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Case Header Card */}
@@ -158,10 +246,10 @@ export const RecoveryDetail: React.FC = () => {
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
               <div className="neo-badge neo-badge-yellow" style={{ fontSize: '12px', padding: '4px 12px' }}>
                 <BrainCircuit size={12} />
-                <span>{(caseData.diagnosis?.category || 'analyzing').replace(/_/g, ' ').toUpperCase()}</span>
+                <span>{categoryText}</span>
               </div>
-              <div className={`neo-badge ${(caseData.diagnosis?.confidence || 0) >= 0.8 ? 'neo-badge-green' : (caseData.diagnosis?.confidence || 0) >= 0.5 ? 'neo-badge-blue' : 'neo-badge-coral'}`} style={{ fontSize: '12px', padding: '4px 12px' }}>
-                <span>Confidence: {Math.round((caseData.diagnosis?.confidence || 0) * 100)}%</span>
+              <div className={`neo-badge ${confidenceScore >= 80 ? 'neo-badge-green' : confidenceScore >= 50 ? 'neo-badge-blue' : 'neo-badge-coral'}`} style={{ fontSize: '12px', padding: '4px 12px' }}>
+                <span>Confidence: {confidenceScore}%</span>
               </div>
               {caseData.diagnosis?.recoverability && (
                 <div className={`neo-badge ${caseData.diagnosis.recoverability === 'high' ? 'neo-badge-green' : caseData.diagnosis.recoverability === 'medium' ? 'neo-badge-yellow' : 'neo-badge-coral'}`} style={{ fontSize: '12px', padding: '4px 12px' }}>
@@ -181,15 +269,15 @@ export const RecoveryDetail: React.FC = () => {
               }}>
                 <div style={{
                   height: '100%',
-                  width: `${Math.round((caseData.diagnosis?.confidence || 0) * 100)}%`,
-                  backgroundColor: (caseData.diagnosis?.confidence || 0) >= 0.8 ? '#22c55e' : (caseData.diagnosis?.confidence || 0) >= 0.5 ? '#3b82f6' : '#ff5757',
+                  width: `${confidenceScore}%`,
+                  backgroundColor: confidenceScore >= 80 ? '#22c55e' : confidenceScore >= 50 ? '#3b82f6' : '#ff5757',
                   borderRadius: '4px',
                   transition: 'width 0.6s ease',
                 }} />
               </div>
             </div>
 
-            {/* AI Reasoning Quote — the focal point */}
+            {/* AI Reasoning Quote */}
             <div
               style={{
                 padding: '16px',
@@ -242,10 +330,10 @@ export const RecoveryDetail: React.FC = () => {
                   RECOMMENDED ACTION
                 </div>
                 <div style={{ fontSize: '16px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#0369a1' }}>
-                  {caseData.recommendedAction?.replace(/_/g, ' ') || 'None'}
+                  {candidateAction}
                 </div>
                 <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>
-                  {caseData.policyDecision?.allowed ? '✓ Policy Approved' : '❌ Policy Blocked'} • Attempt #{caseData.attemptCount || 0}
+                  {policyStatusSubtext} • Attempt #{caseData.attemptCount || 0}
                 </div>
               </div>
             </div>
@@ -260,8 +348,8 @@ export const RecoveryDetail: React.FC = () => {
                   height: '36px',
                   borderRadius: '10px',
                   border: '2px solid var(--border-black)',
-                  backgroundColor: caseData.policyDecision?.allowed ? '#22c55e' : '#ff5757',
-                  color: '#ffffff',
+                  backgroundColor: policyBg,
+                  color: policyBg === '#ffe600' ? '#121316' : '#ffffff',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -288,8 +376,8 @@ export const RecoveryDetail: React.FC = () => {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <div className={`neo-badge ${caseData.policyDecision?.allowed ? 'neo-badge-green' : 'neo-badge-coral'}`}>
-                  <span>{caseData.policyDecision?.allowed ? 'POLICY PERMITTED' : 'POLICY BLOCKED'}</span>
+                <div className={`neo-badge ${policyBadgeClass}`}>
+                  <span>{policyTitle}</span>
                 </div>
                 {caseData.policyDecision?.checkedAt && (
                   <span style={{ fontSize: '11px', color: '#64748b' }}>
@@ -298,7 +386,7 @@ export const RecoveryDetail: React.FC = () => {
                 )}
               </div>
               <div style={{ fontSize: '13px', fontWeight: 600, color: '#121316' }}>
-                {caseData.policyDecision?.reason || 'Evaluated against retry limits and auto-action thresholds.'}
+                {policyReason}
               </div>
             </div>
           </div>
