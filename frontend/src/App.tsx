@@ -100,7 +100,7 @@ export const App: React.FC = () => {
               <Route path="/" element={<Dashboard isRunning={isRunningBatch} onRunBatch={handleRunBatch} onOpenJudgeModal={() => setIsJudgeModalOpen(true)} />} />
               <Route path="/recoveries" element={<Recoveries />} />
               <Route path="/recoveries/:id" element={<RecoveryDetail />} />
-              <Route path="/test-cases" element={<TestCases />} />
+              <Route path="/test-cases" element={<Recoveries />} />
               <Route path="/review" element={<ReviewQueue />} />
               <Route path="/policies" element={<Policies />} />
             </Routes>

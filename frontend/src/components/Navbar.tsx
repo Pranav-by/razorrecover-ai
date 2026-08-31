@@ -14,8 +14,7 @@ export const Navbar: React.FC<NavbarProps> = ({ isRunning, onRunBatch, onResetDa
 
   const navLinks = [
     { path: '/', label: 'Overview', icon: LayoutDashboard },
-    { path: '/recoveries', label: 'Revenue Cases', icon: Layers },
-    { path: '/test-cases', label: 'Test Suite', icon: FlaskConical },
+    { path: '/recoveries', label: 'Revenue Cases & Test Lab', icon: Layers },
     { path: '/review', label: 'Review Queue', icon: UserCheck },
     { path: '/policies', label: 'Guardrails', icon: ShieldCheck },
   ];
