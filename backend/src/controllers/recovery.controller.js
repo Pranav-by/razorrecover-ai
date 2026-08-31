@@ -556,29 +556,37 @@ class RecoveryController {
     try {
       const { id } = req.params;
       const Transaction = require('../models/Transaction');
-      const AuditLog = require('../models/AuditLog');
       const mongoose = require('mongoose');
 
-      let query = { $or: [{ caseId: id }, { paymentId: id }] };
+      let orClauses = [{ caseId: id }, { paymentId: id }];
       if (mongoose.Types.ObjectId.isValid(id)) {
-        query.$or.push({ _id: id });
-        query.$or.push({ transactionId: id });
+        orClauses.push({ _id: new mongoose.Types.ObjectId(id) });
+        orClauses.push({ transactionId: new mongoose.Types.ObjectId(id) });
       }
 
-      const rCase = await RecoveryCase.findOne(query);
+      // Check and delete RecoveryCase
+      const rCase = await RecoveryCase.findOne({ $or: orClauses });
       if (rCase) {
         if (rCase.transactionId) {
           await Transaction.deleteOne({ _id: rCase.transactionId });
         }
-        await AuditLog.deleteMany({ recoveryCaseId: rCase._id });
         await RecoveryCase.deleteOne({ _id: rCase._id });
-      } else {
-        let txnQuery = { $or: [{ paymentId: id }] };
-        if (mongoose.Types.ObjectId.isValid(id)) {
-          txnQuery.$or.push({ _id: id });
-        }
-        await Transaction.deleteOne(txnQuery);
       }
+
+      // Also directly delete matching Transaction by paymentId, caseId, or _id
+      let txnClauses = [{ paymentId: id }, { caseId: id }];
+      if (mongoose.Types.ObjectId.isValid(id)) {
+        txnClauses.push({ _id: new mongoose.Types.ObjectId(id) });
+      }
+      if (/^RC_\d+$/.test(id)) {
+        const idx = parseInt(id.replace('RC_', ''), 10) - 1;
+        const allTxns = await Transaction.find().sort({ isCustomTest: -1, createdAt: -1, _id: -1 }).skip(idx).limit(1);
+        if (allTxns.length > 0) {
+          txnClauses.push({ _id: allTxns[0]._id });
+        }
+      }
+
+      await Transaction.deleteMany({ $or: txnClauses });
 
       res.status(200).json({ success: true, message: `Case ${id} deleted successfully` });
     } catch (err) { next(err); }

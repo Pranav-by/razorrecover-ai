@@ -38,13 +38,20 @@ export const Recoveries: React.FC = () => {
   const [singleExecutionResult, setSingleExecutionResult] = useState<any | null>(null);
   const [benchmarkResults, setBenchmarkResults] = useState<{ [id: string]: { status: string; badgeClass: string; detail: string } }>({});
 
-  const handleDeleteCase = async (id: string) => {
-    if (!window.confirm(`Are you sure you want to delete case/transaction ${id}?`)) return;
-    setDeletingId(id);
+  const handleDeleteCase = async (caseObj: any) => {
+    const targetId = caseObj._id || caseObj.paymentId || caseObj.caseId;
+    if (!window.confirm(`Are you sure you want to delete test case ${caseObj.caseId || caseObj.paymentId || targetId}?`)) return;
+    setDeletingId(targetId);
     try {
-      await deleteTestCase(id);
-      setCases(prev => prev.filter(c => c.caseId !== id && (c as any)._id !== id && (c as any).paymentId !== id));
+      await deleteTestCase(targetId);
+      setCases(prev => prev.filter(c => 
+        (c as any)._id !== targetId && 
+        (c as any).paymentId !== targetId && 
+        c.caseId !== targetId &&
+        c.caseId !== caseObj.caseId
+      ));
       setTotal(prev => Math.max(0, prev - 1));
+      await fetchCases();
     } catch (err) {
       console.error('Error deleting test case:', err);
     } finally {
@@ -421,8 +428,8 @@ export const Recoveries: React.FC = () => {
                     </Link>
 
                     <button
-                      onClick={() => handleDeleteCase(tc.caseId || tc._id)}
-                      disabled={deletingId === tc.caseId || deletingId === tc._id}
+                      onClick={() => handleDeleteCase(tc)}
+                      disabled={deletingId === tc.caseId || deletingId === tc._id || deletingId === tc.paymentId}
                       className="neo-btn neo-btn-sm"
                       style={{ padding: '6px 8px', backgroundColor: '#fee2e2' }}
                       title="Delete test case"
@@ -743,8 +750,8 @@ export const Recoveries: React.FC = () => {
                         </Link>
 
                         <button
-                          onClick={() => handleDeleteCase(item.caseId || (item as any)._id)}
-                          disabled={deletingId === item.caseId || deletingId === (item as any)._id}
+                          onClick={() => handleDeleteCase(item)}
+                          disabled={deletingId === item.caseId || deletingId === (item as any)._id || deletingId === (item as any).paymentId}
                           className="neo-btn neo-btn-sm"
                           style={{
                             width: '32px',
