@@ -74,7 +74,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div className="neo-badge neo-badge-yellow">
               <Star size={12} fill="#121316" color="#121316" />
-              <span>Track 03 Autonomous Winback Engine</span>
+              <span>AI Revenue Recovery Engine</span>
             </div>
             <div className="neo-badge neo-badge-green">
               <span>{summary.revenueRecovered > 0 ? '✓ Winback Verified' : '● Telemetry Ingest Live'}</span>
@@ -86,7 +86,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
           </h1>
 
           <p style={{ fontSize: '14px', color: '#475569', fontWeight: 500, margin: 0 }}>
-            Autonomous AI agent pipeline that identifies leaked revenue across checkouts, subscriptions & invoices, evaluates Expected Recovery Value ($Amount \times P$), and settles funds with immutable audit logs.
+            Autonomous AI agent pipeline that identifies leaked revenue across checkouts, subscriptions & invoices, evaluates Expected Recovery Value (Amount × Probability), and settles funds with immutable audit logs.
           </p>
         </div>
 

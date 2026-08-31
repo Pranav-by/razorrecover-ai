@@ -38,15 +38,9 @@ export const Navbar: React.FC<NavbarProps> = ({ isRunning, onRunBatch, onResetDa
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontFamily: 'var(--font-heading)', fontSize: '18px', fontWeight: 800, color: 'var(--border-black)' }}>
-                RazorRecover AI
-              </span>
-              <div className="neo-badge neo-badge-yellow" style={{ fontSize: '11px', padding: '2px 8px' }}>
-                <Star size={12} fill="#121316" color="#121316" />
-                <span>Track 03 Winner</span>
-              </div>
-            </div>
+            <span style={{ fontFamily: 'var(--font-heading)', fontSize: '18px', fontWeight: 800, color: 'var(--border-black)' }}>
+              RazorRecover AI
+            </span>
             <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>
               Autonomous Revenue Winback Engine
             </span>
