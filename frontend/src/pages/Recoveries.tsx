@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { RecoveryCase } from '../types';
-import { getRecoveries } from '../services/api';
-import { Layers, Filter, Search, ChevronRight, Download, Star } from 'lucide-react';
+import { getRecoveries, executeTestCase } from '../services/api';
+import { Layers, Filter, Search, ChevronRight, Download, Star, Play, Sparkles, X, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Recoveries: React.FC = () => {
@@ -11,6 +11,10 @@ export const Recoveries: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Single Execution State
+  const [executingCaseId, setExecutingCaseId] = useState<string | null>(null);
+  const [singleExecutionResult, setSingleExecutionResult] = useState<any | null>(null);
 
   const fetchCases = async () => {
     setLoading(true);
@@ -32,6 +36,19 @@ export const Recoveries: React.FC = () => {
     fetchCases();
   }, [selectedScenario, selectedStatus]);
 
+  const handleExecuteSingleCase = async (caseId: string) => {
+    setExecutingCaseId(caseId);
+    try {
+      const result = await executeTestCase(caseId);
+      setSingleExecutionResult(result);
+      await fetchCases();
+    } catch (err) {
+      console.error('Error executing single case from recoveries:', err);
+    } finally {
+      setExecutingCaseId(null);
+    }
+  };
+
   const filteredCases = cases.filter((c) => {
     const matchSearch =
       c.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -40,17 +57,13 @@ export const Recoveries: React.FC = () => {
     return matchSearch;
   });
 
-  const exportCSV = () => {
-    window.open('/api/recovery/batch/latest/export?format=csv', '_blank');
-  };
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '16px 24px 80px 24px' }}>
       {/* Header */}
       <div
         className="neo-card"
         style={{
-          padding: '20px 24px',
+          padding: '24px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -58,85 +71,76 @@ export const Recoveries: React.FC = () => {
           gap: '16px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '12px',
-              border: '2px solid var(--border-black)',
-              backgroundColor: '#38bdf8',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '2px 2px 0px var(--border-black)',
-            }}
-          >
-            <Layers size={22} color="#121316" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className="neo-badge neo-badge-blue">
+              <Layers size={12} />
+              <span>Telemetry Explorer</span>
+            </div>
           </div>
-          <div>
-            <h2 style={{ fontSize: '20px', margin: 0 }}>Revenue Leakage Cases & Interventions</h2>
-            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
-              AI diagnosis, Expected Recovery Value ($Amount \times P$) & settlement tracking
-            </span>
-          </div>
+          <h1 style={{ fontSize: '24px', margin: 0 }}>Revenue Leak Inventory</h1>
+          <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>
+            {total} detected leak incidents • Execute single cases with 1-click or inspect full audit trails
+          </span>
         </div>
 
-        <button onClick={exportCSV} className="neo-btn neo-btn-white">
-          <Download size={16} />
-          <span>Export Audit Matrix (CSV)</span>
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <Link to="/test-cases" className="neo-btn neo-btn-primary neo-btn-sm">
+            <span>⚡ Open Test Suite Sandbox</span>
+          </Link>
+        </div>
       </div>
 
-      {/* Filter & Search Toolbar */}
+      {/* Filters Card */}
       <div
-        className="neo-card-flat"
+        className="neo-card"
         style={{
-          padding: '16px 20px',
+          padding: '18px 24px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: '14px',
-          backgroundColor: '#ffffff',
+          gap: '16px',
         }}
       >
-        {/* Scenario Filter Pills */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <Filter size={16} color="#64748b" />
-          <span style={{ fontSize: '13px', fontWeight: 700, fontFamily: 'var(--font-heading)' }}>Scenario:</span>
-          {[
-            { id: 'all', label: 'All Leaks' },
-            { id: 'payment_failure', label: 'Payment Failures' },
-            { id: 'checkout_abandonment', label: 'Checkout Dropoff' },
-            { id: 'subscription_failure', label: 'Subscriptions' },
-            { id: 'invoice_overdue', label: 'B2B Invoices' },
-          ].map((sc) => (
-            <button
-              key={sc.id}
-              onClick={() => setSelectedScenario(sc.id)}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '999px',
-                fontSize: '12px',
-                fontWeight: 700,
-                fontFamily: 'var(--font-heading)',
-                cursor: 'pointer',
-                border: '2px solid var(--border-black)',
-                backgroundColor: selectedScenario === sc.id ? 'var(--accent-yellow)' : '#ffffff',
-                boxShadow: selectedScenario === sc.id ? '2px 2px 0px var(--border-black)' : 'none',
-                color: '#121316',
-                transition: 'all 0.15s ease',
-              }}
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Scenario Filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Filter size={14} color="#64748b" />
+            <select
+              value={selectedScenario}
+              onChange={(e) => setSelectedScenario(e.target.value)}
+              className="neo-input"
+              style={{ height: '38px', fontSize: '12px', fontWeight: 700 }}
             >
-              {sc.label}
-            </button>
-          ))}
+              <option value="all">All Scenarios</option>
+              <option value="payment_failure">Payment Failures</option>
+              <option value="checkout_abandonment">Checkout Drops</option>
+              <option value="subscription_failure">Subscriptions</option>
+              <option value="invoice_overdue">B2B Invoices</option>
+            </select>
+          </div>
+
+          {/* Status Filter */}
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="neo-input"
+            style={{ height: '38px', fontSize: '12px', fontWeight: 700 }}
+          >
+            <option value="all">All Statuses</option>
+            <option value="DETECTED">Detected</option>
+            <option value="STRATEGY_SELECTED">Strategy Selected</option>
+            <option value="RECOVERED">Recovered</option>
+            <option value="HUMAN_REVIEW">Human Review</option>
+            <option value="BLOCKED">Blocked</option>
+            <option value="HALTED">Halted</option>
+          </select>
         </div>
 
-        {/* Search Input Box */}
-        <div style={{ position: 'relative', width: '280px' }}>
-          <Search size={16} color="#64748b" style={{ position: 'absolute', left: '12px', top: '14px' }} />
+        {/* Search */}
+        <div style={{ position: 'relative', width: '260px' }}>
+          <Search size={14} style={{ position: 'absolute', left: '12px', top: '14px', color: '#64748b' }} />
           <input
             type="text"
             placeholder="Search customer, case ID..."
@@ -167,6 +171,7 @@ export const Recoveries: React.FC = () => {
                 <th style={{ padding: '12px 14px' }}>Winback Prob.</th>
                 <th style={{ padding: '12px 14px' }}>Strategy Action</th>
                 <th style={{ padding: '12px 14px' }}>Status</th>
+                <th style={{ padding: '12px 14px' }}>1-Click Execute</th>
                 <th style={{ padding: '12px 14px' }}>Inspect</th>
               </tr>
             </thead>
@@ -176,6 +181,18 @@ export const Recoveries: React.FC = () => {
                 if (item.status === 'RECOVERED') badgeClass = 'neo-badge-green';
                 else if (item.status === 'BLOCKED' || item.status === 'HALTED' || item.status === 'FAILED') badgeClass = 'neo-badge-coral';
                 else if (item.status === 'HUMAN_REVIEW' || item.status === 'PAUSED') badgeClass = 'neo-badge-yellow';
+
+                const isRowExecuting = executingCaseId === item.caseId || executingCaseId === (item as any)._id;
+
+                const strategy = item.recommendedAction
+                  ? item.recommendedAction.replace(/_/g, ' ')
+                  : item.scenario === 'payment_failure'
+                  ? 'retry payment'
+                  : item.scenario === 'checkout_abandonment'
+                  ? 'generate link'
+                  : item.scenario === 'subscription_failure'
+                  ? 'update method'
+                  : 'send reminder';
 
                 return (
                   <tr
@@ -232,21 +249,31 @@ export const Recoveries: React.FC = () => {
                     </td>
                     <td style={{ padding: '12px 14px' }}>
                       <div className="neo-badge neo-badge-yellow" style={{ fontSize: '10px', padding: '2px 8px', textTransform: 'uppercase' }}>
-                        {item.recommendedAction
-                          ? item.recommendedAction.replace(/_/g, ' ')
-                          : item.scenario === 'payment_failure'
-                          ? 'retry payment'
-                          : item.scenario === 'checkout_abandonment'
-                          ? 'generate link'
-                          : item.scenario === 'subscription_failure'
-                          ? 'update method'
-                          : 'send reminder'}
+                        {strategy}
                       </div>
                     </td>
                     <td style={{ padding: '12px 14px' }}>
                       <div className={`neo-badge ${badgeClass}`} style={{ fontSize: '10px', padding: '2px 8px' }}>
                         {item.status}
                       </div>
+                    </td>
+                    <td style={{ padding: '12px 14px' }}>
+                      <button
+                        onClick={() => handleExecuteSingleCase(item.caseId)}
+                        disabled={isRowExecuting}
+                        className="neo-btn neo-btn-sm"
+                        style={{ backgroundColor: '#c4f0c2', fontWeight: 800 }}
+                        title="Execute full 10-agent pipeline on this single case"
+                      >
+                        {isRowExecuting ? (
+                          <Sparkles size={14} className="animate-spin" />
+                        ) : (
+                          <>
+                            <Play size={12} fill="#121316" />
+                            <span>⚡ Run Single</span>
+                          </>
+                        )}
+                      </button>
                     </td>
                     <td style={{ padding: '12px 14px' }}>
                       <Link
@@ -273,6 +300,117 @@ export const Recoveries: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* ─── Live Single Execution Stepper Modal (1-Click Trigger) ─── */}
+      {singleExecutionResult && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px',
+            backdropFilter: 'blur(4px)',
+          }}
+          onClick={() => setSingleExecutionResult(null)}
+        >
+          <div
+            className="neo-card"
+            style={{
+              maxWidth: '740px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '28px',
+              backgroundColor: '#ffffff',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className={`neo-badge ${singleExecutionResult.finalStatus === 'RECOVERED' ? 'neo-badge-green' : singleExecutionResult.finalStatus === 'HUMAN_REVIEW' ? 'neo-badge-yellow' : 'neo-badge-coral'}`}>
+                    {singleExecutionResult.finalStatus}
+                  </span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 800 }}>{singleExecutionResult.caseId}</span>
+                </div>
+                <h2 style={{ fontSize: '20px', margin: '4px 0 0 0' }}>Single-Case Autonomous Execution Result</h2>
+              </div>
+
+              <button onClick={() => setSingleExecutionResult(null)} className="neo-btn neo-btn-sm" style={{ padding: '6px' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Outcome Banner */}
+            <div
+              style={{
+                padding: '16px',
+                borderRadius: '12px',
+                border: '2px solid var(--border-black)',
+                backgroundColor: singleExecutionResult.finalStatus === 'RECOVERED' ? '#f0fdf4' : singleExecutionResult.finalStatus === 'HUMAN_REVIEW' ? '#fff7d6' : '#fff1f2',
+                boxShadow: '2px 2px 0px var(--border-black)',
+                marginBottom: '16px',
+              }}
+            >
+              <div style={{ fontSize: '18px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#121316' }}>
+                {singleExecutionResult.finalStatus === 'RECOVERED' ? `💰 Won Back ₹${singleExecutionResult.recoveredAmount?.toLocaleString('en-IN')}` : `Status: ${singleExecutionResult.finalStatus}`}
+              </div>
+              <div style={{ fontSize: '13px', color: '#475569', marginTop: '4px' }}>
+                {singleExecutionResult.finalStatus === 'RECOVERED'
+                  ? 'All 10 agent pipeline steps executed autonomously and verified with direct settlement.'
+                  : singleExecutionResult.finalStatus === 'HUMAN_REVIEW'
+                  ? 'Financial guardrails held action safely and routed transaction to Human Review Queue.'
+                  : 'Safety stopping rule halted outreach immediately to protect customer compliance.'}
+              </div>
+            </div>
+
+            {/* Stepper Trace */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#64748b' }}>
+                LIVE 10-AGENT EXECUTION TRACE:
+              </span>
+              {singleExecutionResult.executionTrace?.map((step: any, idx: number) => (
+                <div
+                  key={idx}
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    backgroundColor: '#fffdfa',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontSize: '12px',
+                  }}
+                >
+                  <div>
+                    <span style={{ fontWeight: 800, color: '#0369a1', fontFamily: 'monospace', marginRight: '8px' }}>
+                      {step.step}:
+                    </span>
+                    <span style={{ color: '#121316' }}>{step.detail}</span>
+                  </div>
+                  <span className="neo-badge neo-badge-green" style={{ fontSize: '9px', padding: '1px 6px' }}>
+                    {step.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+              <button onClick={() => setSingleExecutionResult(null)} className="neo-btn neo-btn-primary">
+                Close Trace
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
