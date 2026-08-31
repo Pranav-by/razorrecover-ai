@@ -28,9 +28,10 @@ export const TestCases: React.FC = () => {
     hasDispute: false
   });
 
-  // Single Execution State
+  // Single Execution State & Dynamic Results Tracking
   const [executingId, setExecutingId] = useState<string | null>(null);
   const [executionResult, setExecutionResult] = useState<any | null>(null);
+  const [benchmarkResults, setBenchmarkResults] = useState<{ [id: string]: { status: string; badgeClass: string; detail: string } }>({});
 
   useEffect(() => {
     fetchTestCases();
@@ -75,6 +76,26 @@ export const TestCases: React.FC = () => {
     try {
       const result = await executeTestCase(targetId);
       setExecutionResult(result);
+
+      // Dynamically update card result after live execution (no pre-answering!)
+      let badgeClass = 'neo-badge-green';
+      if (result.finalStatus === 'HUMAN_REVIEW' || result.finalStatus === 'BLOCKED') badgeClass = 'neo-badge-coral';
+      if (result.finalStatus === 'HALTED' || result.finalStatus === 'PAUSED') badgeClass = 'neo-badge-coral';
+      if (result.finalStatus === 'PROMISE_LOGGED' || result.finalStatus === 'AWAITING_PROMISE') badgeClass = 'neo-badge-blue';
+
+      setBenchmarkResults(prev => ({
+        ...prev,
+        [targetId]: {
+          status: result.finalStatus,
+          badgeClass,
+          detail: result.finalStatus === 'RECOVERED'
+            ? `💰 Won Back ₹${result.recoveredAmount?.toLocaleString('en-IN')}`
+            : result.finalStatus === 'HUMAN_REVIEW'
+            ? '❌ Financial policy guardrail blocked action → Held for human operator'
+            : `🛑 Outreach halted by stopping rule`
+        }
+      }));
+
       await fetchTestCases();
     } catch (err) {
       console.error('Error executing test case:', err);
@@ -90,10 +111,9 @@ export const TestCases: React.FC = () => {
       target: 'Rahul Sharma (CUS_101)',
       amount: '₹6,999',
       scenario: 'payment_failure',
+      scenarioTag: 'UPI Failure',
       inputSignature: 'UPI gateway timeout at checkout authorization • Attempt 1/2 • Low risk',
-      expectedOutcome: 'Autonomous retry approved by Policy Engine (₹6,999 ≤ ₹10k) → Verified Won Back',
-      status: 'RECOVERED',
-      badgeClass: 'neo-badge-green',
+      evaluationGoal: 'Test whether AI chooses retry and if Policy Engine approves auto-action (₹6,999 ≤ ₹10k)',
       paymentId: 'pay_demo_001'
     },
     {
@@ -102,10 +122,9 @@ export const TestCases: React.FC = () => {
       target: 'Neha Singh (CUS_104)',
       amount: '₹12,999',
       scenario: 'checkout_abandonment',
+      scenarioTag: 'Cart Abandoned',
       inputSignature: 'Cart abandoned at payment sheet with items saved • 8 prior platform purchases',
-      expectedOutcome: 'Outbound 1-click cart recovery link dispatched within 09:00-19:00 IST window → Converted',
-      status: 'RECOVERED',
-      badgeClass: 'neo-badge-green',
+      evaluationGoal: 'Test cart recovery link generation and 09:00–19:00 IST communication window compliance',
       paymentId: 'pay_demo_002'
     },
     {
@@ -114,10 +133,9 @@ export const TestCases: React.FC = () => {
       target: 'Priya Patel (CUS_102)',
       amount: '₹999 / mo',
       scenario: 'subscription_failure',
+      scenarioTag: 'Card Expired',
       inputSignature: 'Card token expiration on monthly billing cycle • 12 prior renewals in good standing',
-      expectedOutcome: '7-day non-disruptive grace period applied → Method update link dispatched → Mandate restored',
-      status: 'RECOVERED',
-      badgeClass: 'neo-badge-green',
+      evaluationGoal: 'Test 7-day non-disruptive grace period application and method update link dispatch',
       paymentId: 'pay_demo_003'
     },
     {
@@ -126,10 +144,9 @@ export const TestCases: React.FC = () => {
       target: 'TechStar Solutions Pvt Ltd (CUS_201)',
       amount: '₹2,50,000',
       scenario: 'invoice_overdue',
+      scenarioTag: 'Overdue Invoice',
       inputSignature: 'Commercial enterprise invoice overdue by 6 days on Q3 Cloud Infrastructure Contract',
-      expectedOutcome: 'Dunning ladder step 2 applied with dynamic payment terms → Promise-to-Pay logged for Sept 2',
-      status: 'PROMISE_LOGGED',
-      badgeClass: 'neo-badge-blue',
+      evaluationGoal: 'Test automated dunning escalation and promise-to-pay commitment calendar registration',
       paymentId: 'pay_demo_004'
     },
     {
@@ -138,10 +155,9 @@ export const TestCases: React.FC = () => {
       target: 'Ananya Gupta (CUS_106)',
       amount: '₹50,000',
       scenario: 'payment_failure',
+      scenarioTag: 'High-Value (₹50k)',
       inputSignature: 'High-value transaction decline (₹50k) • 3 prior retry attempts (max 2 allowed)',
-      expectedOutcome: 'AI recommended retry → Policy Engine BLOCKED (Rule POL-02 & POL-05) → Escalated to Human Review',
-      status: 'HUMAN_REVIEW',
-      badgeClass: 'neo-badge-coral',
+      evaluationGoal: 'Test if Policy Engine strictly blocks autonomous execution (Rule POL-02 & POL-05) and escalates',
       paymentId: 'pay_demo_005'
     },
     {
@@ -150,10 +166,9 @@ export const TestCases: React.FC = () => {
       target: 'Suresh Iyer (CUS_301)',
       amount: '₹3,500',
       scenario: 'payment_failure',
+      scenarioTag: 'Opt-Out Record',
       inputSignature: 'Payment failed but customer master record has active DO_NOT_CONTACT opt-out flag',
-      expectedOutcome: 'Stopping Rule STOP-02 checked FIRST → Permanent halt → Zero messages sent',
-      status: 'HALTED',
-      badgeClass: 'neo-badge-coral',
+      evaluationGoal: 'Test if Stopping Rule STOP-02 halts outreach immediately before policy check with 0 messages',
       paymentId: 'pay_demo_optout'
     }
   ];
@@ -203,7 +218,7 @@ export const TestCases: React.FC = () => {
           </h1>
 
           <p style={{ fontSize: '14px', color: '#475569', fontWeight: 500, margin: 0 }}>
-            Inspect every synthetic transaction, add custom edge cases with custom risk flags, and trigger live 1-click autonomous multi-agent evaluations.
+            Inspect every synthetic transaction, add custom edge cases with custom risk flags, and trigger live 1-click autonomous multi-agent evaluations without pre-answered outcomes.
           </p>
         </div>
 
@@ -295,7 +310,7 @@ export const TestCases: React.FC = () => {
             </div>
             <h3 style={{ fontSize: '20px', margin: 0 }}>Core Track 03 Benchmark Test Scenarios</h3>
             <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
-              Click "⚡ Run Pipeline" on any benchmark to execute the full 10-agent pipeline individually
+              Click "⚡ Run Pipeline" on any scenario to trigger the live 10-agent autonomous evaluation
             </span>
           </div>
         </div>
@@ -303,6 +318,8 @@ export const TestCases: React.FC = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '16px' }}>
           {CANONICAL_BENCHMARKS.map((tc) => {
             const isExecuting = executingId === tc.paymentId;
+            const executedResult = benchmarkResults[tc.paymentId];
+
             return (
               <div
                 key={tc.id}
@@ -320,10 +337,22 @@ export const TestCases: React.FC = () => {
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '12px', color: '#64748b' }}>{tc.id}</span>
-                    <div className={`neo-badge ${tc.badgeClass}`} style={{ fontSize: '11px', padding: '2px 8px' }}>
-                      {tc.status}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '12px', color: '#64748b' }}>{tc.id}</span>
+                      <div className="neo-badge neo-badge-blue" style={{ fontSize: '10px', padding: '1px 6px' }}>
+                        {tc.scenarioTag}
+                      </div>
                     </div>
+
+                    {executedResult ? (
+                      <div className={`neo-badge ${executedResult.badgeClass}`} style={{ fontSize: '11px', padding: '2px 8px' }}>
+                        {executedResult.status}
+                      </div>
+                    ) : (
+                      <div className="neo-badge neo-badge-yellow" style={{ fontSize: '10px', padding: '2px 6px' }}>
+                        ● UNTESTED
+                      </div>
+                    )}
                   </div>
 
                   <div style={{ fontWeight: 800, fontSize: '15px', color: '#121316', fontFamily: 'var(--font-heading)' }}>
@@ -336,11 +365,15 @@ export const TestCases: React.FC = () => {
                   </div>
 
                   <div style={{ fontSize: '11px', color: '#475569', lineHeight: 1.4 }}>
-                    <strong>Input Signature:</strong> {tc.inputSignature}
+                    <strong>Risk Signature:</strong> {tc.inputSignature}
                   </div>
 
-                  <div style={{ fontSize: '11px', color: tc.status === 'HUMAN_REVIEW' || tc.status === 'HALTED' ? '#be123c' : '#15803d', fontWeight: 600, backgroundColor: '#f8fafc', padding: '8px', borderRadius: '8px' }}>
-                    <strong>Expected Result:</strong> {tc.expectedOutcome}
+                  <div style={{ fontSize: '11px', color: executedResult ? '#15803d' : '#0369a1', fontWeight: 600, backgroundColor: '#f8fafc', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    {executedResult ? (
+                      <div><strong>Live Pipeline Result:</strong> {executedResult.detail}</div>
+                    ) : (
+                      <div><strong>Evaluation Goal:</strong> {tc.evaluationGoal}</div>
+                    )}
                   </div>
                 </div>
 
@@ -359,7 +392,7 @@ export const TestCases: React.FC = () => {
                     ) : (
                       <>
                         <Play size={14} fill="#121316" />
-                        <span>⚡ Run Pipeline</span>
+                        <span>{executedResult ? '⚡ Re-Run Pipeline' : '⚡ Run Pipeline'}</span>
                       </>
                     )}
                   </button>
