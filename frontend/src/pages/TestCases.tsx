@@ -577,6 +577,7 @@ export const TestCases: React.FC = () => {
                 <th style={{ padding: '12px 14px' }}>Customer</th>
                 <th style={{ padding: '12px 14px' }}>Scenario</th>
                 <th style={{ padding: '12px 14px' }}>Amount</th>
+                <th style={{ padding: '12px 14px' }}>Strategy Action</th>
                 <th style={{ padding: '12px 14px' }}>Failure Reason</th>
                 <th style={{ padding: '12px 14px' }}>Attempts</th>
                 <th style={{ padding: '12px 14px' }}>Current Status</th>
@@ -591,6 +592,7 @@ export const TestCases: React.FC = () => {
                 if (txn.recoveryStatus === 'HALTED') statusBadge = 'neo-badge-coral';
 
                 const isRowExecuting = executingId === txn._id || executingId === txn.paymentId;
+                const strategy = txn.strategyAction || (txn.scenario === 'payment_failure' ? 'retry_payment' : txn.scenario === 'checkout_abandonment' ? 'generate_link' : txn.scenario === 'subscription_failure' ? 'update_method' : 'send_reminder');
 
                 return (
                   <tr
@@ -616,6 +618,11 @@ export const TestCases: React.FC = () => {
                     </td>
                     <td style={{ padding: '12px 14px', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
                       ₹{txn.amount.toLocaleString('en-IN')}
+                    </td>
+                    <td style={{ padding: '12px 14px' }}>
+                      <div className="neo-badge neo-badge-yellow" style={{ fontSize: '10px', padding: '2px 8px', textTransform: 'uppercase' }}>
+                        {strategy.replace(/_/g, ' ')}
+                      </div>
                     </td>
                     <td style={{ padding: '12px 14px' }}>
                       <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#dc2626' }}>

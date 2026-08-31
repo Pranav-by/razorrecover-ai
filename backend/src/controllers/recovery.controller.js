@@ -157,6 +157,15 @@ class RecoveryController {
       const enrichedTransactions = transactions.map(t => {
         const cust = customerMap[t.customerId];
         const rCase = caseMap[t._id.toString()];
+
+        let strategyAction = rCase?.recommendedAction;
+        if (!strategyAction) {
+          if (t.scenario === 'checkout_abandonment') strategyAction = 'generate_link';
+          else if (t.scenario === 'subscription_failure' || t.failureReason === 'expired_card') strategyAction = 'update_method';
+          else if (t.scenario === 'invoice_overdue') strategyAction = 'send_reminder';
+          else strategyAction = 'retry_payment';
+        }
+
         return {
           _id: t._id,
           paymentId: t.paymentId,
@@ -172,6 +181,7 @@ class RecoveryController {
           attempts: t.attempts,
           orderDescription: t.orderDescription,
           recoveryStatus: rCase?.status || 'PENDING_BATCH',
+          strategyAction,
           recoveredAmount: rCase?.recoveredAmount || 0,
           caseId: rCase?.caseId || null,
           isCustomTest: !!t.isCustomTest
@@ -275,6 +285,11 @@ class RecoveryController {
       const caseCount = await RecoveryCase.countDocuments();
       const caseId = `RC_TEST_${String(caseCount + 1).padStart(4, '0')}`;
 
+      let initialAction = 'retry_payment';
+      if (scenario === 'checkout_abandonment') initialAction = 'generate_link';
+      else if (scenario === 'subscription_failure' || failureReason === 'expired_card') initialAction = 'update_method';
+      else if (scenario === 'invoice_overdue') initialAction = 'send_reminder';
+
       const recoveryCase = await RecoveryCase.create({
         caseId,
         transactionId: transaction._id,
@@ -285,6 +300,7 @@ class RecoveryController {
         recoveryProbability: probability,
         expectedRecoveryValue: Math.round(Number(amount) * probability),
         priorityScore: Math.round(Number(amount) * probability),
+        recommendedAction: initialAction,
         status: 'DETECTED',
         attemptCount: Number(attempts),
         maxAttempts: 2,

@@ -231,8 +231,16 @@ export const Recoveries: React.FC = () => {
                       </div>
                     </td>
                     <td style={{ padding: '12px 14px' }}>
-                      <div className="neo-badge neo-badge-yellow" style={{ fontSize: '10px', padding: '2px 8px' }}>
-                        {item.recommendedAction ? item.recommendedAction.replace(/_/g, ' ') : 'N/A'}
+                      <div className="neo-badge neo-badge-yellow" style={{ fontSize: '10px', padding: '2px 8px', textTransform: 'uppercase' }}>
+                        {item.recommendedAction
+                          ? item.recommendedAction.replace(/_/g, ' ')
+                          : item.scenario === 'payment_failure'
+                          ? 'retry payment'
+                          : item.scenario === 'checkout_abandonment'
+                          ? 'generate link'
+                          : item.scenario === 'subscription_failure'
+                          ? 'update method'
+                          : 'send reminder'}
                       </div>
                     </td>
                     <td style={{ padding: '12px 14px' }}>

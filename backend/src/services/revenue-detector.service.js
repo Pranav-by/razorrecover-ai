@@ -47,6 +47,11 @@ class RevenueDetectorService {
       const probability = this._calculateInitialProbability(txn, customer);
       const expectedValue = Math.round(txn.amount * probability);
 
+      let initialAction = 'retry_payment';
+      if (txn.scenario === 'checkout_abandonment') initialAction = 'generate_link';
+      else if (txn.scenario === 'subscription_failure' || txn.failureReason === 'expired_card') initialAction = 'update_method';
+      else if (txn.scenario === 'invoice_overdue') initialAction = 'send_reminder';
+
       caseCounter++;
       recoveryCase = await RecoveryCase.create({
         caseId: `RC_${String(caseCounter).padStart(4, '0')}`,
@@ -58,6 +63,7 @@ class RevenueDetectorService {
         recoveryProbability: probability,
         expectedRecoveryValue: expectedValue,
         priorityScore: this._calculatePriority(txn, customer, probability),
+        recommendedAction: initialAction,
         status: 'DETECTED',
         batchId,
         attemptCount: txn.attempts || 0,
