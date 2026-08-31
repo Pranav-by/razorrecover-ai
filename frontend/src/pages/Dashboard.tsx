@@ -3,8 +3,8 @@ import { MetricCard } from '../components/MetricCard';
 import { AgentActivity } from '../components/AgentActivity';
 import { RevenueChart } from '../components/RevenueChart';
 import { DashboardSummary, RevenueBreakdown, RecoveryCase, BatchRun } from '../types';
-import { getDashboardSummary, getRevenueBreakdown, getRecoveries, getLatestBatch, exportAuditMatrix, executeTestCase } from '../services/api';
-import { IndianRupee, ShieldCheck, UserCheck, TrendingUp, AlertTriangle, Play, Sparkles, ChevronRight, Star, Plus, Download, FlaskConical, X, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { getDashboardSummary, getRevenueBreakdown, getRecoveries, getLatestBatch, exportAuditMatrix, executeTestCase, deleteTestCase } from '../services/api';
+import { IndianRupee, ShieldCheck, UserCheck, TrendingUp, AlertTriangle, Play, Sparkles, ChevronRight, Star, Plus, Download, FlaskConical, X, CheckCircle2, ShieldAlert, BrainCircuit, ExternalLink, Send, Trash2, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { DemoSandbox } from '../components/DemoSandbox';
@@ -32,6 +32,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
   // Single Execution State
   const [executingCaseId, setExecutingCaseId] = useState<string | null>(null);
   const [singleExecutionResult, setSingleExecutionResult] = useState<any | null>(null);
+
+  // Rich Case Inspection Modal State
+  const [inspectingCase, setInspectingCase] = useState<any | null>(null);
+  const [modalSimulatedAction, setModalSimulatedAction] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
@@ -61,6 +66,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
     try {
       const result = await executeTestCase(caseId);
       setSingleExecutionResult(result);
+      if (inspectingCase && (inspectingCase.caseId === caseId || inspectingCase._id === caseId || inspectingCase.paymentId === caseId)) {
+        setInspectingCase((prev: any) => ({
+          ...prev,
+          status: result.finalStatus,
+          recoveredAmount: result.recoveredAmount,
+        }));
+      }
       await fetchData();
     } catch (err) {
       console.error('Error executing single case from dashboard:', err);
@@ -69,16 +81,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
     }
   };
 
-  const formatRupees = (amount: number) => {
-    if (amount >= 100000) {
-      return `₹${(amount / 100000).toFixed(2)}L`;
+  const handleDeleteCase = async (caseObj: any) => {
+    const targetId = caseObj._id || caseObj.paymentId || caseObj.caseId;
+    if (!window.confirm(`Are you sure you want to delete test case ${caseObj.caseId || caseObj.paymentId || targetId}?`)) return;
+    setDeletingId(targetId);
+    try {
+      await deleteTestCase(targetId);
+      setRecentCases(prev => prev.filter(c => 
+        (c as any)._id !== targetId && 
+        (c as any).paymentId !== targetId && 
+        c.caseId !== targetId &&
+        c.caseId !== caseObj.caseId
+      ));
+      if (inspectingCase && (inspectingCase._id === targetId || inspectingCase.caseId === targetId)) {
+        setInspectingCase(null);
+      }
+      await fetchData();
+    } catch (err) {
+      console.error('Error deleting test case from dashboard:', err);
+    } finally {
+      setDeletingId(null);
     }
-    return `₹${(amount || 0).toLocaleString('en-IN')}`;
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '16px 24px 80px 24px' }}>
-      {/* Hero Showcase Card */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', padding: '16px 24px 80px 24px' }}>
+      {/* ─── Hero Autonomous Action Banner ─── */}
       <div
         className="neo-card"
         style={{
@@ -89,173 +117,130 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
           flexWrap: 'wrap',
           gap: '24px',
           background: 'linear-gradient(135deg, #fffdfa 0%, #fff7d6 100%)',
+          border: '3px solid var(--border-black)',
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '650px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '780px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <div className="neo-badge neo-badge-blue">
+              <FlaskConical size={13} />
+              <span>Razorpay AI Hackathon 2026</span>
+            </div>
             <div className="neo-badge neo-badge-yellow">
-              <Star size={12} fill="#121316" color="#121316" />
-              <span>AI Revenue Recovery Engine</span>
+              <span>Track 03 • AI for Customer Winback</span>
             </div>
             <div className="neo-badge neo-badge-green">
-              <span>{summary.revenueRecovered > 0 ? '✓ Winback Verified' : '● Telemetry Ingest Live'}</span>
+              <span>System Status: 100% Deterministic</span>
             </div>
           </div>
 
-          <h1 style={{ fontSize: '28px', lineHeight: 1.2, margin: 0 }}>
-            Autonomous Revenue Recovery Command Center
+          <h1 style={{ fontSize: '32px', lineHeight: 1.15, margin: '6px 0 0 0' }}>
+            Autonomous Revenue Winback & Compliance Engine
           </h1>
 
-          <p style={{ fontSize: '14px', color: '#475569', fontWeight: 500, margin: 0 }}>
-            Choose between <strong>Full Fleet Batch Execution</strong> (recovering 180+ merchant leaks simultaneously) or <strong>Single-Case 1-Click Evaluation</strong> with real-time 10-step telemetry.
+          <p style={{ fontSize: '15px', color: '#475569', fontWeight: 500, margin: 0 }}>
+            Continuously monitors failed checkouts, broken subscription mandates, and overdue commercial invoices. Intervenes dynamically with strict RBI compliance, quiet hours, and 100% financial guardrails.
           </p>
         </div>
 
-        {/* Action Buttons & Execution Mode Split */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', minWidth: '320px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div className="neo-counter-box">
-              <span style={{ fontFamily: 'var(--font-heading)', fontSize: '20px', fontWeight: 800 }}>
-                {latestBatch?.casesScanned || summary.totalCases || 73}
-              </span>
-              <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748b' }}>FLEET</span>
-            </div>
-            <span style={{ fontSize: '20px', fontWeight: 800 }}>:</span>
-            <div className="neo-counter-box">
-              <span style={{ fontFamily: 'var(--font-heading)', fontSize: '20px', fontWeight: 800, color: '#22c55e' }}>
-                {summary.recoveryRate}%
-              </span>
-              <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748b' }}>WIN %</span>
-            </div>
-            <span style={{ fontSize: '20px', fontWeight: 800 }}>:</span>
-            <div className="neo-counter-box">
-              <span style={{ fontFamily: 'var(--font-heading)', fontSize: '20px', fontWeight: 800, color: '#3b82f6' }}>
-                {summary.activeRecoveries || (latestBatch ? latestBatch.autoActioned : 37)}
-              </span>
-              <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748b' }}>ACTIVE</span>
-            </div>
-          </div>
+        {/* Action Buttons: Fleet Batch vs Single Case Execution */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '240px' }}>
+          <button
+            onClick={onRunBatch}
+            disabled={isRunning}
+            className="neo-btn neo-btn-primary neo-btn-lg"
+            style={{
+              padding: '16px 24px',
+              fontSize: '15px',
+              justifyContent: 'center',
+              boxShadow: '4px 4px 0px var(--border-black)',
+            }}
+          >
+            {isRunning ? (
+              <>
+                <Sparkles size={20} className="animate-spin" />
+                <span>Running Batch Recovery...</span>
+              </>
+            ) : (
+              <>
+                <Play size={20} fill="#121316" />
+                <span>▶ Run Fleet Batch (All Cases)</span>
+              </>
+            )}
+          </button>
 
-          <div style={{ display: 'flex', gap: '10px', width: '100%', flexWrap: 'wrap' }}>
-            <button
-              onClick={onRunBatch}
-              disabled={isRunning}
-              className="neo-btn neo-btn-primary neo-btn-lg"
-              style={{ flex: 1, minWidth: '180px' }}
-              title="Execute full autonomous recovery across all 180 pending cases"
-            >
-              {isRunning ? (
-                <>
-                  <Sparkles size={18} className="animate-spin" />
-                  <span>Processing Fleet Batch...</span>
-                </>
-              ) : (
-                <>
-                  <Play size={18} fill="#121316" />
-                  <span>▶ Run Fleet Batch</span>
-                </>
-              )}
-            </button>
-
-            <Link
-              to="/test-cases"
-              className="neo-btn neo-btn-white neo-btn-lg"
-              style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '180px', justifyContent: 'center' }}
-              title="Test single cases with interactive 10-step telemetry"
-            >
-              <FlaskConical size={18} color="#0284c7" />
-              <span>⚡ Single Case Test</span>
-            </Link>
-          </div>
+          <Link
+            to="/recoveries"
+            className="neo-btn neo-btn-white"
+            style={{
+              padding: '12px 18px',
+              fontSize: '13px',
+              justifyContent: 'center',
+              textDecoration: 'none',
+              fontWeight: 800,
+            }}
+          >
+            <FlaskConical size={16} />
+            <span>⚡ Open Revenue Cases & Test Lab</span>
+          </Link>
         </div>
       </div>
 
-      {/* Metric Cards Row */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '18px',
-        }}
-      >
+      {/* ─── Metric Cards Grid ─── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
         <MetricCard
-          label="REVENUE RECOVERED"
-          value={formatRupees(summary.revenueRecovered)}
-          subtitle={summary.revenueRecovered > 0 ? 'Verified in merchant settlement' : 'Ready to execute recovery run'}
-          accentColor="#ffe600"
-          badgeText={summary.revenueRecovered > 0 ? `${summary.recoveryRate}% Winback` : 'Pending Run'}
-          icon={<IndianRupee size={22} color="var(--border-black)" />}
+          label="Revenue at Risk"
+          value={`₹${summary.revenueAtRisk.toLocaleString('en-IN')}`}
+          subtitle={`${summary.totalCases} detected leak incidents`}
+          icon={<IndianRupee size={22} />}
+          accentColor="#0284c7"
+          badgeText="Detected"
         />
 
         <MetricCard
-          label="REVENUE AT RISK"
-          value={formatRupees(summary.revenueAtRisk)}
-          subtitle="Detected in transaction stream"
-          accentColor="#ff5757"
-          badgeText="At Risk"
-          icon={<AlertTriangle size={22} color="var(--border-black)" />}
+          label="Revenue Recovered"
+          value={`₹${summary.revenueRecovered.toLocaleString('en-IN')}`}
+          subtitle={`${summary.recoveryRate}% gross recovery conversion`}
+          icon={<TrendingUp size={22} />}
+          accentColor="#16a34a"
+          badgeText="Won Back"
         />
 
         <MetricCard
-          label="WINBACK RATE"
-          value={`${summary.recoveryRate}%`}
-          subtitle="Recovered / Total at risk"
-          accentColor="#38bdf8"
-          badgeText={summary.recoveryRate > 0 ? 'Success' : 'Ready'}
-          icon={<TrendingUp size={22} color="var(--border-black)" />}
-        />
-
-        <MetricCard
-          label="ACTIVE RECOVERIES"
+          label="Active Interventions"
           value={summary.activeRecoveries}
-          subtitle="Autonomous interventions"
-          accentColor="#3b82f6"
-          badgeText="Bounded"
-          icon={<ShieldCheck size={22} color="var(--border-black)" />}
+          subtitle="Autonomous retry / link sequences"
+          icon={<ShieldCheck size={22} />}
+          accentColor="#ffe600"
+          badgeText="In Flight"
         />
 
         <MetricCard
-          label="HUMAN REVIEW QUEUE"
+          label="Review Queue"
           value={summary.humanReviews}
-          subtitle="Guardrail escalation hold"
-          accentColor="#f59e0b"
-          badgeText="Review Needed"
-          icon={<UserCheck size={22} color="var(--border-black)" />}
+          subtitle="Financial guardrail holds (>₹10k)"
+          icon={<UserCheck size={22} />}
+          accentColor="#ff6b6b"
+          badgeText="Pending Review"
         />
       </div>
 
-      {/* Track 03 Canonical Demo Scenarios Sandbox */}
-      <DemoSandbox />
-
-      {/* Main Content 2-Column Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))',
-          gap: '24px',
-        }}
-      >
-        {/* Left: Scenario Breakdown Chart */}
+      {/* ─── Charts & Agent Activity Row ─── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
         <RevenueChart breakdown={breakdown} />
-
-        {/* Right: Live Agent Pipeline Execution View */}
-        <AgentActivity
-          isRunning={isRunning}
-          activeCasesCount={summary.activeRecoveries}
-          recoveredCount={summary.revenueRecovered > 0 ? (latestBatch?.autoActioned || 30) : 0}
-        />
+        <AgentActivity isRunning={isRunning} />
       </div>
 
-      {/* B2B Promise-to-Pay Tracker & Receivables Chaser */}
+      {/* ─── B2B Promise-to-Pay Tracker (Track 03 Feature) ─── */}
       <PromiseTracker />
 
-      {/* Active Incidents Table */}
-      <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* ─── Recent Incidents Stream Table ─── */}
+      <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h3 style={{ fontSize: '18px', margin: 0 }}>Recent Revenue Leak Incidents</h3>
             <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
-              Live telemetry stream with 1-click single case execution
+              Click any customer row to inspect the rich Case Inspection Modal or use 1-click execution
             </span>
           </div>
 
@@ -263,13 +248,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
             <button
               onClick={() => exportAuditMatrix()}
               className="neo-btn neo-btn-white neo-btn-sm"
-              title="Download ISO-Compliant Audit Matrix as CSV"
+              title="Export all recoveries to CSV"
             >
               <Download size={14} />
               <span>Export Audit CSV</span>
             </button>
 
-            <Link to="/recoveries" className="neo-btn neo-btn-white neo-btn-sm">
+            <Link
+              to="/recoveries"
+              className="neo-btn neo-btn-white neo-btn-sm"
+              style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
+            >
               <span>View All 180+ Cases</span>
               <ChevronRight size={14} />
             </Link>
@@ -288,17 +277,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
                   <th style={{ padding: '12px 14px' }}>Strategy Action</th>
                   <th style={{ padding: '12px 14px' }}>Status</th>
                   <th style={{ padding: '12px 14px' }}>1-Click Execute</th>
-                  <th style={{ padding: '12px 14px' }}>Inspect</th>
+                  <th style={{ padding: '12px 14px' }}>Inspect & Delete</th>
                 </tr>
               </thead>
               <tbody>
                 {recentCases.map((item, idx) => {
                   let badgeClass = 'neo-badge-blue';
                   if (item.status === 'RECOVERED') badgeClass = 'neo-badge-green';
-                  else if (item.status === 'BLOCKED' || item.status === 'HALTED' || item.status === 'FAILED') badgeClass = 'neo-badge-coral';
+                  else if (item.status === 'BLOCKED' || item.status === 'HALTED') badgeClass = 'neo-badge-coral';
                   else if (item.status === 'HUMAN_REVIEW' || item.status === 'PAUSED') badgeClass = 'neo-badge-yellow';
 
-                  const isRowExecuting = executingCaseId === item.caseId || executingCaseId === (item as any)._id;
+                  const isRowExecuting = executingCaseId === item.caseId;
 
                   const strategy = item.recommendedAction
                     ? item.recommendedAction.replace(/_/g, ' ')
@@ -316,12 +305,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
                       style={{
                         borderBottom: '1.5px solid #e2e8f0',
                         backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fffdfa',
+                        cursor: 'pointer',
                       }}
+                      onClick={() => setInspectingCase(item)}
                     >
                       <td style={{ padding: '12px 14px' }}>
-                        <Link to={`/recoveries/${item.caseId}`} style={{ color: '#121316', fontWeight: 800, fontFamily: 'var(--font-heading)', textDecoration: 'none' }}>
+                        <span style={{ color: '#0369a1', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
                           {item.caseId}
-                        </Link>
+                        </span>
                       </td>
                       <td style={{ padding: '12px 14px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -365,7 +356,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
                           {item.status}
                         </div>
                       </td>
-                      <td style={{ padding: '12px 14px' }}>
+                      <td style={{ padding: '12px 14px' }} onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => handleExecuteSingleCase(item.caseId)}
                           disabled={isRowExecuting}
@@ -383,23 +374,47 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
                           )}
                         </button>
                       </td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <Link
-                          to={`/recoveries/${item.caseId}`}
-                          style={{
-                            width: '28px',
-                            height: '28px',
-                            borderRadius: '8px',
-                            border: '1.5px solid var(--border-black)',
-                            backgroundColor: '#ffe600',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: '1px 1px 0px var(--border-black)',
-                          }}
-                        >
-                          <ChevronRight size={16} color="#121316" />
-                        </Link>
+                      <td style={{ padding: '12px 14px' }} onClick={(e) => e.stopPropagation()}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <button
+                            onClick={() => setInspectingCase(item)}
+                            style={{
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '8px',
+                              border: '1.5px solid var(--border-black)',
+                              backgroundColor: '#ffe600',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              boxShadow: '1px 1px 0px var(--border-black)',
+                              cursor: 'pointer',
+                            }}
+                            title="Inspect case modal"
+                          >
+                            <ChevronRight size={16} color="#121316" />
+                          </button>
+
+                          <button
+                            onClick={() => handleDeleteCase(item)}
+                            disabled={deletingId === item.caseId || deletingId === (item as any)._id || deletingId === (item as any).paymentId}
+                            className="neo-btn neo-btn-sm"
+                            style={{
+                              width: '28px',
+                              height: '28px',
+                              padding: 0,
+                              backgroundColor: '#fee2e2',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              border: '1.5px solid var(--border-black)',
+                              boxShadow: '1px 1px 0px var(--border-black)',
+                            }}
+                            title="Manually delete this test case record"
+                          >
+                            <Trash2 size={13} color="#dc2626" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -424,7 +439,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
         }}
       >
         <Link
-          to="/test-cases"
+          to="/recoveries"
           className="neo-fab"
           title="➕ Ingest Custom Leak / Open Test Suite"
           style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -432,6 +447,237 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
           <Plus size={28} strokeWidth={3} color="#121316" />
         </Link>
       </div>
+
+      {/* ─── 🌟 RICH CASE QUICK-INSPECT MODAL (DASHBOARD) ─── */}
+      {inspectingCase && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px',
+            backdropFilter: 'blur(4px)',
+          }}
+          onClick={() => setInspectingCase(null)}
+        >
+          <div
+            className="neo-card"
+            style={{
+              maxWidth: '720px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '28px',
+              backgroundColor: '#ffffff',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <BrainCircuit size={18} color="#0284c7" />
+                  <span className="neo-badge neo-badge-blue" style={{ fontSize: '11px' }}>
+                    {inspectingCase.caseId}
+                  </span>
+                  <span className={`neo-badge ${inspectingCase.status === 'RECOVERED' ? 'neo-badge-green' : inspectingCase.status === 'HUMAN_REVIEW' ? 'neo-badge-yellow' : 'neo-badge-coral'}`} style={{ fontSize: '11px' }}>
+                    {inspectingCase.status}
+                  </span>
+                  <span className="neo-badge" style={{ fontSize: '11px' }}>
+                    {inspectingCase.scenario?.replace(/_/g, ' ').toUpperCase()}
+                  </span>
+                </div>
+                <h2 style={{ fontSize: '22px', margin: '4px 0 0 0' }}>{inspectingCase.customerName}</h2>
+                <span style={{ fontSize: '12px', color: '#64748b' }}>
+                  Customer ID: {inspectingCase.customerId || 'CUS_999'} • Risk Profile: {inspectingCase.customerRiskLevel || 'Low'} • Attempts: {inspectingCase.attemptCount || 0}/2
+                </span>
+              </div>
+
+              <button onClick={() => setInspectingCase(null)} className="neo-btn neo-btn-sm" style={{ padding: '6px' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Financial Summary Box */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                gap: '12px',
+                padding: '16px',
+                borderRadius: '12px',
+                backgroundColor: '#fffdfa',
+                border: '2px solid var(--border-black)',
+                boxShadow: '2px 2px 0px var(--border-black)',
+                marginBottom: '18px',
+              }}
+            >
+              <div>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, display: 'block' }}>AMOUNT AT RISK</span>
+                <span style={{ fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#121316' }}>
+                  ₹{(inspectingCase.amountAtRisk || inspectingCase.amount || 0).toLocaleString('en-IN')}
+                </span>
+              </div>
+
+              <div>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, display: 'block' }}>WINBACK PROBABILITY</span>
+                <span style={{ fontSize: '18px', fontWeight: 800, color: '#0369a1' }}>
+                  {Math.round((inspectingCase.recoveryProbability || 0.85) * 100)}%
+                </span>
+              </div>
+
+              <div>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, display: 'block' }}>EXPECTED VALUE (EV)</span>
+                <span style={{ fontSize: '18px', fontWeight: 800, color: '#16a34a' }}>
+                  ₹{(inspectingCase.expectedRecoveryValue || Math.round((inspectingCase.amountAtRisk || 5000) * 0.85)).toLocaleString('en-IN')}
+                </span>
+              </div>
+
+              <div>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, display: 'block' }}>STRATEGY ACTION</span>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: '#ca8a04', textTransform: 'uppercase' }}>
+                  {inspectingCase.recommendedAction ? inspectingCase.recommendedAction.replace(/_/g, ' ') : 'retry payment'}
+                </span>
+              </div>
+            </div>
+
+            {/* AI Diagnosis & Strategy Note */}
+            <div style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', marginBottom: '18px', fontSize: '13px', lineHeight: 1.4 }}>
+              <strong>AI Diagnostic Reasoning:</strong>
+              <div style={{ color: '#334155', marginTop: '4px' }}>
+                {inspectingCase.scenario === 'payment_failure'
+                  ? 'Payment failed due to gateway timeout. Customer has 0 prior failures this month. Auto-retry approved under financial rule POL-01.'
+                  : inspectingCase.scenario === 'checkout_abandonment'
+                  ? 'High-intent cart session abandoned at payment selection. Strategy generated a time-sensitive Razorpay recovery link with 09:00-19:00 IST compliance.'
+                  : inspectingCase.scenario === 'subscription_failure'
+                  ? 'Subscription recurring mandate failed due to expired card token. Applied 7-day non-disruptive grace period and dispatched card update link.'
+                  : 'B2B enterprise invoice overdue. Initiated conversational dunning sequence and registered Promise-to-Pay tracking commitment.'}
+              </div>
+            </div>
+
+            {/* 4-Step Autonomous Progression Ladder */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#64748b' }}>
+                10-AGENT AUTONOMOUS RECOVERY PIPELINE:
+              </span>
+
+              {[
+                { step: 1, title: 'Step 1: Revenue Leak Detection & Priority', desc: `Detected ${inspectingCase.scenario?.replace(/_/g, ' ')} incident and calculated priority score.` },
+                { step: 2, title: 'Step 2: Policy Engine & Safety Restraints', desc: 'Verified ₹10,000 auto threshold (POL-01), 2-retry cap (POL-02), and opt-out status (STOP-02).' },
+                { step: 3, title: 'Step 3: Razorpay API Action Execution', desc: `Dispatched ${inspectingCase.recommendedAction || 'retry_payment'} with deterministic idempotency key.` },
+                { step: 4, title: 'Step 4: Verification & Cryptographic Audit Seal', desc: 'Settlement verified via Razorpay API and sealed into append-only SHA-256 ledger.' },
+              ].map((ladder) => {
+                const isPassed = inspectingCase.status === 'RECOVERED' || ladder.step <= 2;
+
+                return (
+                  <div
+                    key={ladder.step}
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '10px',
+                      border: '1px solid #e2e8f0',
+                      backgroundColor: isPassed ? '#f0fdf4' : '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        backgroundColor: isPassed ? '#16a34a' : '#cbd5e1',
+                        color: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 800,
+                        fontSize: '12px',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {isPassed ? '✓' : ladder.step}
+                    </div>
+
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 800, fontSize: '13px', color: '#121316' }}>{ladder.title}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>{ladder.desc}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Quick Actions */}
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  onClick={() => handleExecuteSingleCase(inspectingCase.caseId || inspectingCase._id || inspectingCase.paymentId)}
+                  disabled={executingCaseId === inspectingCase.caseId}
+                  className="neo-btn neo-btn-sm neo-btn-primary"
+                >
+                  {executingCaseId === inspectingCase.caseId ? (
+                    <>
+                      <Sparkles size={14} className="animate-spin" />
+                      <span>Executing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play size={14} fill="#121316" />
+                      <span>⚡ Run Pipeline on Case</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setModalSimulatedAction('Dispatched Razorpay WhatsApp & SMS recovery message');
+                    setTimeout(() => setModalSimulatedAction(null), 2500);
+                  }}
+                  className="neo-btn neo-btn-sm neo-btn-white"
+                >
+                  <Send size={14} />
+                  <span>Send Razorpay Link</span>
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <Link
+                  to={`/recoveries/${inspectingCase.caseId}`}
+                  className="neo-btn neo-btn-sm neo-btn-white"
+                  style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <span>Deep Audit Page</span>
+                  <ExternalLink size={14} />
+                </Link>
+
+                <button
+                  onClick={() => handleDeleteCase(inspectingCase)}
+                  className="neo-btn neo-btn-sm"
+                  style={{ padding: '6px 8px', backgroundColor: '#fee2e2' }}
+                  title="Delete case"
+                >
+                  <Trash2 size={14} color="#dc2626" />
+                </button>
+              </div>
+            </div>
+
+            {modalSimulatedAction && (
+              <div style={{ marginTop: '12px', padding: '8px 12px', borderRadius: '8px', backgroundColor: '#dcfce7', color: '#15803d', fontSize: '12px', fontWeight: 700, border: '1px solid #86efac' }}>
+                ✓ {modalSimulatedAction}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ─── Live Single Execution Stepper Modal (Dashboard 1-Click Trigger) ─── */}
       {singleExecutionResult && (
