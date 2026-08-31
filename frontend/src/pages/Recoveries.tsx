@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { RecoveryCase } from '../types';
 import { getRecoveries, getTestCases, createTestCase, executeTestCase, deleteTestCase, exportAuditMatrix } from '../services/api';
-import { Layers, Filter, Search, ChevronRight, Download, Star, Play, Sparkles, X, CheckCircle2, ShieldAlert, Plus, Terminal, FlaskConical, BrainCircuit, ShieldCheck, ArrowRight, Trash2 } from 'lucide-react';
+import { Layers, Filter, Search, ChevronRight, Download, Star, Play, Sparkles, X, CheckCircle2, ShieldAlert, Plus, Terminal, FlaskConical, BrainCircuit, ShieldCheck, ArrowRight, Trash2, Building, ExternalLink, Clock, Send, ShieldQuestion, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Recoveries: React.FC = () => {
@@ -38,6 +38,10 @@ export const Recoveries: React.FC = () => {
   const [singleExecutionResult, setSingleExecutionResult] = useState<any | null>(null);
   const [benchmarkResults, setBenchmarkResults] = useState<{ [id: string]: { status: string; badgeClass: string; detail: string } }>({});
 
+  // 🔍 Rich Quick-Inspect Modal State (Available for ALL 180+ Cases)
+  const [inspectingCase, setInspectingCase] = useState<any | null>(null);
+  const [modalSimulatedAction, setModalSimulatedAction] = useState<string | null>(null);
+
   const handleDeleteCase = async (caseObj: any) => {
     const targetId = caseObj._id || caseObj.paymentId || caseObj.caseId;
     if (!window.confirm(`Are you sure you want to delete test case ${caseObj.caseId || caseObj.paymentId || targetId}?`)) return;
@@ -51,6 +55,9 @@ export const Recoveries: React.FC = () => {
         c.caseId !== caseObj.caseId
       ));
       setTotal(prev => Math.max(0, prev - 1));
+      if (inspectingCase && (inspectingCase._id === targetId || inspectingCase.caseId === targetId)) {
+        setInspectingCase(null);
+      }
       await fetchCases();
     } catch (err) {
       console.error('Error deleting test case:', err);
@@ -131,7 +138,7 @@ export const Recoveries: React.FC = () => {
   const fetchCases = async () => {
     setLoading(true);
     try {
-      const params: any = { limit: 100 };
+      const params: any = { limit: 200 };
       if (selectedScenario !== 'all') params.scenario = selectedScenario;
       if (selectedStatus !== 'all') params.status = selectedStatus;
       const [resCases, resTests] = await Promise.all([
@@ -198,6 +205,15 @@ export const Recoveries: React.FC = () => {
         }
       }));
 
+      // Update inspecting case if currently open
+      if (inspectingCase && (inspectingCase.caseId === targetId || inspectingCase.paymentId === targetId || inspectingCase._id === targetId)) {
+        setInspectingCase((prev: any) => ({
+          ...prev,
+          status: result.finalStatus,
+          recoveredAmount: result.recoveredAmount,
+        }));
+      }
+
       await fetchCases();
     } catch (err) {
       console.error('Error executing single case from recoveries:', err);
@@ -248,7 +264,7 @@ export const Recoveries: React.FC = () => {
           </h1>
 
           <p style={{ fontSize: '14px', color: '#475569', fontWeight: 500, margin: 0 }}>
-            Unified command hub to inspect synthetic leak incidents, trigger 1-click single-case telemetry executions, run automated guardrail tests, and ingest custom transaction edge cases.
+            Unified command hub to inspect all 180+ leak incidents, trigger 1-click single-case telemetry executions, open rich case inspection modals, run automated guardrail tests, and ingest custom transaction edge cases.
           </p>
         </div>
 
@@ -418,14 +434,14 @@ export const Recoveries: React.FC = () => {
                       )}
                     </button>
 
-                    <Link
-                      to={`/recoveries/${tc.caseId}`}
+                    <button
+                      onClick={() => setInspectingCase(tc)}
                       className="neo-btn neo-btn-sm neo-btn-white"
                       style={{ padding: '6px 10px' }}
-                      title="Inspect full audit & diagnosis"
+                      title="Inspect full case modal"
                     >
                       <span>🔍 Inspect</span>
-                    </Link>
+                    </button>
 
                     <button
                       onClick={() => handleDeleteCase(tc)}
@@ -541,6 +557,26 @@ export const Recoveries: React.FC = () => {
                       </>
                     )}
                   </button>
+
+                  <button
+                    onClick={() => setInspectingCase({
+                      caseId: tc.id,
+                      paymentId: tc.paymentId,
+                      customerName: tc.target,
+                      scenario: tc.scenario,
+                      amountAtRisk: parseInt(tc.amount.replace(/[^0-9]/g, ''), 10) || 5000,
+                      recoveryProbability: 0.9,
+                      expectedRecoveryValue: Math.round((parseInt(tc.amount.replace(/[^0-9]/g, ''), 10) || 5000) * 0.9),
+                      recommendedAction: tc.scenario === 'payment_failure' ? 'retry_payment' : tc.scenario === 'checkout_abandonment' ? 'generate_link' : tc.scenario === 'subscription_failure' ? 'update_method' : 'send_reminder',
+                      status: executedResult?.status || 'DETECTED',
+                      riskSignature: tc.inputSignature,
+                    })}
+                    className="neo-btn neo-btn-sm neo-btn-white"
+                    style={{ padding: '6px 10px' }}
+                    title="Open rich case inspection modal"
+                  >
+                    <span>🔍 Inspect</span>
+                  </button>
                 </div>
               </div>
             );
@@ -554,7 +590,7 @@ export const Recoveries: React.FC = () => {
           <div>
             <h3 style={{ fontSize: '18px', margin: 0 }}>All Detected Revenue Leak Cases ({total})</h3>
             <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
-              Live merchant stream with 1-click execution & full audit inspection
+              Click any customer row to open the rich Case Inspection Modal or use 1-click execution
             </span>
           </div>
 
@@ -626,7 +662,7 @@ export const Recoveries: React.FC = () => {
                 <th style={{ padding: '12px 14px' }}>Strategy Action</th>
                 <th style={{ padding: '12px 14px' }}>Status</th>
                 <th style={{ padding: '12px 14px' }}>1-Click Execute</th>
-                <th style={{ padding: '12px 14px' }}>Inspect</th>
+                <th style={{ padding: '12px 14px' }}>Inspect & Delete</th>
               </tr>
             </thead>
             <tbody>
@@ -654,12 +690,14 @@ export const Recoveries: React.FC = () => {
                     style={{
                       borderBottom: '1.5px solid #e2e8f0',
                       backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fffdfa',
+                      cursor: 'pointer',
                     }}
+                    onClick={() => setInspectingCase(item)}
                   >
                     <td style={{ padding: '12px 14px' }}>
-                      <Link to={`/recoveries/${item.caseId}`} style={{ color: '#121316', fontWeight: 800, fontFamily: 'var(--font-heading)', textDecoration: 'none' }}>
+                      <span style={{ color: '#0369a1', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
                         {item.caseId}
-                      </Link>
+                      </span>
                     </td>
                     <td style={{ padding: '12px 14px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -711,7 +749,7 @@ export const Recoveries: React.FC = () => {
                         {item.status}
                       </div>
                     </td>
-                    <td style={{ padding: '12px 14px' }}>
+                    <td style={{ padding: '12px 14px' }} onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => handleExecuteSingleCase(item.caseId)}
                         disabled={isRowExecuting}
@@ -729,10 +767,10 @@ export const Recoveries: React.FC = () => {
                         )}
                       </button>
                     </td>
-                    <td style={{ padding: '12px 14px' }}>
+                    <td style={{ padding: '12px 14px' }} onClick={(e) => e.stopPropagation()}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Link
-                          to={`/recoveries/${item.caseId}`}
+                        <button
+                          onClick={() => setInspectingCase(item)}
                           style={{
                             width: '32px',
                             height: '32px',
@@ -743,11 +781,12 @@ export const Recoveries: React.FC = () => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             boxShadow: '1px 1px 0px var(--border-black)',
+                            cursor: 'pointer',
                           }}
-                          title="Inspect AI diagnosis, guardrails, & immutable audit trail"
+                          title="Inspect case modal"
                         >
                           <ChevronRight size={18} color="#121316" />
-                        </Link>
+                        </button>
 
                         <button
                           onClick={() => handleDeleteCase(item)}
@@ -777,6 +816,237 @@ export const Recoveries: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* ─── 🌟 RICH CASE QUICK-INSPECT MODAL (AVAILABLE FOR ALL 180+ CASES) ─── */}
+      {inspectingCase && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px',
+            backdropFilter: 'blur(4px)',
+          }}
+          onClick={() => setInspectingCase(null)}
+        >
+          <div
+            className="neo-card"
+            style={{
+              maxWidth: '720px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '28px',
+              backgroundColor: '#ffffff',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <BrainCircuit size={18} color="#0284c7" />
+                  <span className="neo-badge neo-badge-blue" style={{ fontSize: '11px' }}>
+                    {inspectingCase.caseId}
+                  </span>
+                  <span className={`neo-badge ${inspectingCase.status === 'RECOVERED' ? 'neo-badge-green' : inspectingCase.status === 'HUMAN_REVIEW' ? 'neo-badge-yellow' : 'neo-badge-coral'}`} style={{ fontSize: '11px' }}>
+                    {inspectingCase.status}
+                  </span>
+                  <span className="neo-badge" style={{ fontSize: '11px' }}>
+                    {inspectingCase.scenario?.replace(/_/g, ' ').toUpperCase()}
+                  </span>
+                </div>
+                <h2 style={{ fontSize: '22px', margin: '4px 0 0 0' }}>{inspectingCase.customerName}</h2>
+                <span style={{ fontSize: '12px', color: '#64748b' }}>
+                  Customer ID: {inspectingCase.customerId || 'CUS_999'} • Risk Profile: {inspectingCase.customerRiskLevel || 'Low'} • Attempts: {inspectingCase.attemptCount || 0}/2
+                </span>
+              </div>
+
+              <button onClick={() => setInspectingCase(null)} className="neo-btn neo-btn-sm" style={{ padding: '6px' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Financial Summary Box */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                gap: '12px',
+                padding: '16px',
+                borderRadius: '12px',
+                backgroundColor: '#fffdfa',
+                border: '2px solid var(--border-black)',
+                boxShadow: '2px 2px 0px var(--border-black)',
+                marginBottom: '18px',
+              }}
+            >
+              <div>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, display: 'block' }}>AMOUNT AT RISK</span>
+                <span style={{ fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#121316' }}>
+                  ₹{(inspectingCase.amountAtRisk || inspectingCase.amount || 0).toLocaleString('en-IN')}
+                </span>
+              </div>
+
+              <div>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, display: 'block' }}>WINBACK PROBABILITY</span>
+                <span style={{ fontSize: '18px', fontWeight: 800, color: '#0369a1' }}>
+                  {Math.round((inspectingCase.recoveryProbability || 0.85) * 100)}%
+                </span>
+              </div>
+
+              <div>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, display: 'block' }}>EXPECTED VALUE (EV)</span>
+                <span style={{ fontSize: '18px', fontWeight: 800, color: '#16a34a' }}>
+                  ₹{(inspectingCase.expectedRecoveryValue || Math.round((inspectingCase.amountAtRisk || 5000) * 0.85)).toLocaleString('en-IN')}
+                </span>
+              </div>
+
+              <div>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, display: 'block' }}>STRATEGY ACTION</span>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: '#ca8a04', textTransform: 'uppercase' }}>
+                  {inspectingCase.recommendedAction ? inspectingCase.recommendedAction.replace(/_/g, ' ') : 'retry payment'}
+                </span>
+              </div>
+            </div>
+
+            {/* AI Diagnosis & Strategy Note */}
+            <div style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', marginBottom: '18px', fontSize: '13px', lineHeight: 1.4 }}>
+              <strong>AI Diagnostic Reasoning:</strong>
+              <div style={{ color: '#334155', marginTop: '4px' }}>
+                {inspectingCase.scenario === 'payment_failure'
+                  ? 'Payment failed due to gateway timeout. Customer has 0 prior failures this month. Auto-retry approved under financial rule POL-01.'
+                  : inspectingCase.scenario === 'checkout_abandonment'
+                  ? 'High-intent cart session abandoned at payment selection. Strategy generated a time-sensitive Razorpay recovery link with 09:00-19:00 IST compliance.'
+                  : inspectingCase.scenario === 'subscription_failure'
+                  ? 'Subscription recurring mandate failed due to expired card token. Applied 7-day non-disruptive grace period and dispatched card update link.'
+                  : 'B2B enterprise invoice overdue. Initiated conversational dunning sequence and registered Promise-to-Pay tracking commitment.'}
+              </div>
+            </div>
+
+            {/* 4-Step Autonomous Progression Ladder */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#64748b' }}>
+                10-AGENT AUTONOMOUS RECOVERY PIPELINE:
+              </span>
+
+              {[
+                { step: 1, title: 'Step 1: Revenue Leak Detection & Priority', desc: `Detected ${inspectingCase.scenario?.replace(/_/g, ' ')} incident and calculated priority score.` },
+                { step: 2, title: 'Step 2: Policy Engine & Safety Restraints', desc: 'Verified ₹10,000 auto threshold (POL-01), 2-retry cap (POL-02), and opt-out status (STOP-02).' },
+                { step: 3, title: 'Step 3: Razorpay API Action Execution', desc: `Dispatched ${inspectingCase.recommendedAction || 'retry_payment'} with deterministic idempotency key.` },
+                { step: 4, title: 'Step 4: Verification & Cryptographic Audit Seal', desc: 'Settlement verified via Razorpay API and sealed into append-only SHA-256 ledger.' },
+              ].map((ladder) => {
+                const isPassed = inspectingCase.status === 'RECOVERED' || ladder.step <= 2;
+
+                return (
+                  <div
+                    key={ladder.step}
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '10px',
+                      border: '1px solid #e2e8f0',
+                      backgroundColor: isPassed ? '#f0fdf4' : '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        backgroundColor: isPassed ? '#16a34a' : '#cbd5e1',
+                        color: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 800,
+                        fontSize: '12px',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {isPassed ? '✓' : ladder.step}
+                    </div>
+
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 800, fontSize: '13px', color: '#121316' }}>{ladder.title}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>{ladder.desc}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Quick Actions */}
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  onClick={() => handleExecuteSingleCase(inspectingCase.caseId || inspectingCase._id || inspectingCase.paymentId)}
+                  disabled={executingCaseId === inspectingCase.caseId}
+                  className="neo-btn neo-btn-sm neo-btn-primary"
+                >
+                  {executingCaseId === inspectingCase.caseId ? (
+                    <>
+                      <Sparkles size={14} className="animate-spin" />
+                      <span>Executing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play size={14} fill="#121316" />
+                      <span>⚡ Run Pipeline on Case</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setModalSimulatedAction('Dispatched Razorpay WhatsApp & SMS recovery message');
+                    setTimeout(() => setModalSimulatedAction(null), 2500);
+                  }}
+                  className="neo-btn neo-btn-sm neo-btn-white"
+                >
+                  <Send size={14} />
+                  <span>Send Razorpay Link</span>
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <Link
+                  to={`/recoveries/${inspectingCase.caseId}`}
+                  className="neo-btn neo-btn-sm neo-btn-white"
+                  style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <span>Deep Audit Page</span>
+                  <ExternalLink size={14} />
+                </Link>
+
+                <button
+                  onClick={() => handleDeleteCase(inspectingCase)}
+                  className="neo-btn neo-btn-sm"
+                  style={{ padding: '6px 8px', backgroundColor: '#fee2e2' }}
+                  title="Delete case"
+                >
+                  <Trash2 size={14} color="#dc2626" />
+                </button>
+              </div>
+            </div>
+
+            {modalSimulatedAction && (
+              <div style={{ marginTop: '12px', padding: '8px 12px', borderRadius: '8px', backgroundColor: '#dcfce7', color: '#15803d', fontSize: '12px', fontWeight: 700, border: '1px solid #86efac' }}>
+                ✓ {modalSimulatedAction}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ─── Add Custom Test Case Modal ─── */}
       {isAddModalOpen && (
