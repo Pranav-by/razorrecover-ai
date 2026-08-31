@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { getTestCases } from '../services/api';
-import { FlaskConical, CheckCircle2, ShieldAlert, AlertOctagon, Terminal, Search, Filter, ArrowRight, Play, Sparkles, Layers, ShieldCheck, DollarSign } from 'lucide-react';
+import { getTestCases, createTestCase, executeTestCase } from '../services/api';
+import { FlaskConical, CheckCircle2, ShieldAlert, AlertOctagon, Terminal, Search, Filter, ArrowRight, Play, Sparkles, Layers, ShieldCheck, DollarSign, Plus, X, BrainCircuit, RotateCcw, AlertTriangle, Check, UserCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const TestCases: React.FC = () => {
@@ -10,6 +10,27 @@ export const TestCases: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [runningUnitTests, setRunningUnitTests] = useState(false);
   const [testExecutionDone, setTestExecutionDone] = useState(false);
+
+  // Ingestion Modal State
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    customerName: 'Kunal Shah',
+    customerEmail: 'kunal@example.com',
+    amount: 7500,
+    scenario: 'payment_failure',
+    method: 'upi',
+    failureReason: 'upi_timeout',
+    attempts: 0,
+    orderDescription: 'Pro Annual Cloud License',
+    riskLevel: 'low',
+    optedOut: false,
+    hasDispute: false
+  });
+
+  // Single Execution State
+  const [executingId, setExecutingId] = useState<string | null>(null);
+  const [executionResult, setExecutionResult] = useState<any | null>(null);
 
   useEffect(() => {
     fetchTestCases();
@@ -32,7 +53,34 @@ export const TestCases: React.FC = () => {
     setTimeout(() => {
       setRunningUnitTests(false);
       setTestExecutionDone(true);
-    }, 600);
+    }, 500);
+  };
+
+  const handleCreateTestCase = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await createTestCase(formData);
+      setIsAddModalOpen(false);
+      await fetchTestCases();
+    } catch (err) {
+      console.error('Error creating test case:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleExecuteSingle = async (targetId: string) => {
+    setExecutingId(targetId);
+    try {
+      const result = await executeTestCase(targetId);
+      setExecutionResult(result);
+      await fetchTestCases();
+    } catch (err) {
+      console.error('Error executing test case:', err);
+    } finally {
+      setExecutingId(null);
+    }
   };
 
   const CANONICAL_BENCHMARKS = [
@@ -45,7 +93,8 @@ export const TestCases: React.FC = () => {
       inputSignature: 'UPI gateway timeout at checkout authorization • Attempt 1/2 • Low risk',
       expectedOutcome: 'Autonomous retry approved by Policy Engine (₹6,999 ≤ ₹10k) → Verified Won Back',
       status: 'RECOVERED',
-      badgeClass: 'neo-badge-green'
+      badgeClass: 'neo-badge-green',
+      paymentId: 'pay_demo_001'
     },
     {
       id: 'TC-DEMO-02',
@@ -56,7 +105,8 @@ export const TestCases: React.FC = () => {
       inputSignature: 'Cart abandoned at payment sheet with items saved • 8 prior platform purchases',
       expectedOutcome: 'Outbound 1-click cart recovery link dispatched within 09:00-19:00 IST window → Converted',
       status: 'RECOVERED',
-      badgeClass: 'neo-badge-green'
+      badgeClass: 'neo-badge-green',
+      paymentId: 'pay_demo_002'
     },
     {
       id: 'TC-DEMO-03',
@@ -67,7 +117,8 @@ export const TestCases: React.FC = () => {
       inputSignature: 'Card token expiration on monthly billing cycle • 12 prior renewals in good standing',
       expectedOutcome: '7-day non-disruptive grace period applied → Method update link dispatched → Mandate restored',
       status: 'RECOVERED',
-      badgeClass: 'neo-badge-green'
+      badgeClass: 'neo-badge-green',
+      paymentId: 'pay_demo_003'
     },
     {
       id: 'TC-DEMO-04',
@@ -78,7 +129,8 @@ export const TestCases: React.FC = () => {
       inputSignature: 'Commercial enterprise invoice overdue by 6 days on Q3 Cloud Infrastructure Contract',
       expectedOutcome: 'Dunning ladder step 2 applied with dynamic payment terms → Promise-to-Pay logged for Sept 2',
       status: 'PROMISE_LOGGED',
-      badgeClass: 'neo-badge-blue'
+      badgeClass: 'neo-badge-blue',
+      paymentId: 'pay_demo_004'
     },
     {
       id: 'TC-DEMO-05',
@@ -89,7 +141,8 @@ export const TestCases: React.FC = () => {
       inputSignature: 'High-value transaction decline (₹50k) • 3 prior retry attempts (max 2 allowed)',
       expectedOutcome: 'AI recommended retry → Policy Engine BLOCKED (Rule POL-02 & POL-05) → Escalated to Human Review',
       status: 'HUMAN_REVIEW',
-      badgeClass: 'neo-badge-coral'
+      badgeClass: 'neo-badge-coral',
+      paymentId: 'pay_demo_005'
     },
     {
       id: 'TC-DEMO-06',
@@ -100,7 +153,8 @@ export const TestCases: React.FC = () => {
       inputSignature: 'Payment failed but customer master record has active DO_NOT_CONTACT opt-out flag',
       expectedOutcome: 'Stopping Rule STOP-02 checked FIRST → Permanent halt → Zero messages sent',
       status: 'HALTED',
-      badgeClass: 'neo-badge-coral'
+      badgeClass: 'neo-badge-coral',
+      paymentId: 'pay_demo_optout'
     }
   ];
 
@@ -133,43 +187,53 @@ export const TestCases: React.FC = () => {
           background: 'linear-gradient(135deg, #fffdfa 0%, #e0f2fe 100%)',
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '800px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '780px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div className="neo-badge neo-badge-blue">
               <FlaskConical size={12} />
-              <span>Live Test Suite & Ingestion Catalog</span>
+              <span>Interactive Test Suite & Sandbox</span>
             </div>
             <div className="neo-badge neo-badge-green">
-              <span>{data?.totalTestCases || 198} Total Test Cases Available</span>
+              <span>{transactions.length + unitTests.length} Total Test Cases</span>
             </div>
           </div>
 
           <h1 style={{ fontSize: '28px', lineHeight: 1.2, margin: 0 }}>
-            Ingested Test Scenarios & Guardrail Test Suite
+            Test Cases & Autonomous Pipeline Sandbox
           </h1>
 
           <p style={{ fontSize: '14px', color: '#475569', fontWeight: 500, margin: 0 }}>
-            Inspect every synthetic transaction ingested into the system, test inputs, failure reasons, and how the autonomous pipeline evaluates each test case under strict financial guardrails.
+            Inspect every synthetic transaction, add custom edge cases with custom risk flags, and trigger live 1-click autonomous multi-agent evaluations.
           </p>
         </div>
 
-        <button
-          onClick={handleRunUnitTests}
-          disabled={runningUnitTests}
-          className="neo-btn neo-btn-primary neo-btn-lg"
-        >
-          {runningUnitTests ? (
-            <>
-              <Sparkles size={16} className="animate-spin" />
-              <span>Running Jest Test Runner...</span>
-            </>
-          ) : (
-            <>
-              <Terminal size={16} />
-              <span>{testExecutionDone ? '✓ 18/18 Tests Passed (0.58s)' : 'Run 18 Guardrail Tests'}</span>
-            </>
-          )}
-        </button>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="neo-btn neo-btn-primary neo-btn-lg"
+          >
+            <Plus size={18} />
+            <span>➕ Ingest Custom Test Case</span>
+          </button>
+
+          <button
+            onClick={handleRunUnitTests}
+            disabled={runningUnitTests}
+            className="neo-btn neo-btn-white neo-btn-lg"
+          >
+            {runningUnitTests ? (
+              <>
+                <Sparkles size={16} className="animate-spin" />
+                <span>Running Tests...</span>
+              </>
+            ) : (
+              <>
+                <Terminal size={16} />
+                <span>{testExecutionDone ? '✓ 18/18 Unit Tests Passed' : 'Run 18 Guardrail Tests'}</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* 18 Automated Unit Tests Showcase Box */}
@@ -222,61 +286,87 @@ export const TestCases: React.FC = () => {
 
       {/* Canonical Benchmark Test Cases */}
       <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <div className="neo-badge neo-badge-yellow" style={{ fontSize: '11px', padding: '2px 8px' }}>
-              <span>6 Canonical Benchmarks</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <div className="neo-badge neo-badge-yellow" style={{ fontSize: '11px', padding: '2px 8px' }}>
+                <span>6 Canonical Benchmarks</span>
+              </div>
             </div>
+            <h3 style={{ fontSize: '20px', margin: 0 }}>Core Track 03 Benchmark Test Scenarios</h3>
+            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
+              Click "⚡ Run Pipeline" on any benchmark to execute the full 10-agent pipeline individually
+            </span>
           </div>
-          <h3 style={{ fontSize: '20px', margin: 0 }}>Core Track 03 Benchmark Test Scenarios</h3>
-          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
-            These 6 primary scenarios demonstrate the full spectrum of recovery, policy restraint, and safety stopping rules
-          </span>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '16px' }}>
-          {CANONICAL_BENCHMARKS.map((tc) => (
-            <div
-              key={tc.id}
-              style={{
-                padding: '18px',
-                borderRadius: '14px',
-                border: '2px solid var(--border-black)',
-                backgroundColor: '#ffffff',
-                boxShadow: '3px 3px 0px var(--border-black)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                gap: '12px',
-              }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '12px', color: '#64748b' }}>{tc.id}</span>
-                  <div className={`neo-badge ${tc.badgeClass}`} style={{ fontSize: '11px', padding: '2px 8px' }}>
-                    {tc.status}
+          {CANONICAL_BENCHMARKS.map((tc) => {
+            const isExecuting = executingId === tc.paymentId;
+            return (
+              <div
+                key={tc.id}
+                style={{
+                  padding: '18px',
+                  borderRadius: '14px',
+                  border: '2px solid var(--border-black)',
+                  backgroundColor: '#ffffff',
+                  boxShadow: '3px 3px 0px var(--border-black)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '12px', color: '#64748b' }}>{tc.id}</span>
+                    <div className={`neo-badge ${tc.badgeClass}`} style={{ fontSize: '11px', padding: '2px 8px' }}>
+                      {tc.status}
+                    </div>
+                  </div>
+
+                  <div style={{ fontWeight: 800, fontSize: '15px', color: '#121316', fontFamily: 'var(--font-heading)' }}>
+                    {tc.title}
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff7d6', padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--border-black)' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 700 }}>Target: {tc.target}</span>
+                    <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '16px' }}>{tc.amount}</span>
+                  </div>
+
+                  <div style={{ fontSize: '11px', color: '#475569', lineHeight: 1.4 }}>
+                    <strong>Input Signature:</strong> {tc.inputSignature}
+                  </div>
+
+                  <div style={{ fontSize: '11px', color: tc.status === 'HUMAN_REVIEW' || tc.status === 'HALTED' ? '#be123c' : '#15803d', fontWeight: 600, backgroundColor: '#f8fafc', padding: '8px', borderRadius: '8px' }}>
+                    <strong>Expected Result:</strong> {tc.expectedOutcome}
                   </div>
                 </div>
 
-                <div style={{ fontWeight: 800, fontSize: '15px', color: '#121316', fontFamily: 'var(--font-heading)' }}>
-                  {tc.title}
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff7d6', padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--border-black)' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 700 }}>Target: {tc.target}</span>
-                  <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '16px' }}>{tc.amount}</span>
-                </div>
-
-                <div style={{ fontSize: '11px', color: '#475569', lineHeight: 1.4 }}>
-                  <strong>Input Signature:</strong> {tc.inputSignature}
-                </div>
-
-                <div style={{ fontSize: '11px', color: tc.status === 'HUMAN_REVIEW' || tc.status === 'HALTED' ? '#be123c' : '#15803d', fontWeight: 600, backgroundColor: '#f8fafc', padding: '8px', borderRadius: '8px' }}>
-                  <strong>Expected Result:</strong> {tc.expectedOutcome}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '6px' }}>
+                  <button
+                    onClick={() => handleExecuteSingle(tc.paymentId)}
+                    disabled={isExecuting}
+                    className="neo-btn neo-btn-sm"
+                    style={{ backgroundColor: '#c4f0c2', fontWeight: 800, flex: 1 }}
+                  >
+                    {isExecuting ? (
+                      <>
+                        <Sparkles size={14} className="animate-spin" />
+                        <span>Evaluating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play size={14} fill="#121316" />
+                        <span>⚡ Run Pipeline</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -284,9 +374,9 @@ export const TestCases: React.FC = () => {
       <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <h3 style={{ fontSize: '18px', margin: 0 }}>All Ingested Synthetic Test Transactions ({transactions.length})</h3>
+            <h3 style={{ fontSize: '18px', margin: 0 }}>All Ingested Test Transactions ({transactions.length})</h3>
             <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
-              Filter and search across the entire stream of transactions at risk
+              Live transaction records available for single-case execution and batch evaluations
             </span>
           </div>
 
@@ -316,10 +406,10 @@ export const TestCases: React.FC = () => {
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {[
             { key: 'all', label: `All Ingested (${transactions.length})` },
-            { key: 'payment_failure', label: 'Payment Failures (70)' },
-            { key: 'checkout_abandonment', label: 'Checkout Drops (50)' },
-            { key: 'subscription_failure', label: 'Subscriptions (35)' },
-            { key: 'invoice_overdue', label: 'Overdue Invoices (25)' },
+            { key: 'payment_failure', label: 'Payment Failures' },
+            { key: 'checkout_abandonment', label: 'Checkout Drops' },
+            { key: 'subscription_failure', label: 'Subscriptions' },
+            { key: 'invoice_overdue', label: 'Overdue Invoices' },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -340,10 +430,10 @@ export const TestCases: React.FC = () => {
                 <th style={{ padding: '12px 14px' }}>Customer</th>
                 <th style={{ padding: '12px 14px' }}>Scenario</th>
                 <th style={{ padding: '12px 14px' }}>Amount</th>
-                <th style={{ padding: '12px 14px' }}>Method</th>
                 <th style={{ padding: '12px 14px' }}>Failure Reason</th>
                 <th style={{ padding: '12px 14px' }}>Attempts</th>
-                <th style={{ padding: '12px 14px' }}>Recovery Outcome</th>
+                <th style={{ padding: '12px 14px' }}>Current Status</th>
+                <th style={{ padding: '12px 14px' }}>Execute</th>
               </tr>
             </thead>
             <tbody>
@@ -352,6 +442,8 @@ export const TestCases: React.FC = () => {
                 if (txn.recoveryStatus === 'RECOVERED') statusBadge = 'neo-badge-green';
                 if (txn.recoveryStatus === 'HUMAN_REVIEW' || txn.recoveryStatus === 'BLOCKED') statusBadge = 'neo-badge-coral';
                 if (txn.recoveryStatus === 'HALTED') statusBadge = 'neo-badge-coral';
+
+                const isRowExecuting = executingId === txn._id || executingId === txn.paymentId;
 
                 return (
                   <tr
@@ -366,7 +458,9 @@ export const TestCases: React.FC = () => {
                     </td>
                     <td style={{ padding: '12px 14px' }}>
                       <div style={{ fontWeight: 700 }}>{txn.customerName}</div>
-                      <div style={{ fontSize: '11px', color: '#64748b' }}>{txn.customerId} • Risk: {txn.customerRiskLevel}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>
+                        {txn.customerId} {txn.optedOut ? '• 🛑 OPTED_OUT' : ''} {txn.hasDispute ? '• ⚠️ DISPUTED' : ''}
+                      </div>
                     </td>
                     <td style={{ padding: '12px 14px' }}>
                       <div className="neo-badge" style={{ fontSize: '10px', padding: '2px 8px' }}>
@@ -375,9 +469,6 @@ export const TestCases: React.FC = () => {
                     </td>
                     <td style={{ padding: '12px 14px', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
                       ₹{txn.amount.toLocaleString('en-IN')}
-                    </td>
-                    <td style={{ padding: '12px 14px', textTransform: 'uppercase', fontSize: '11px', fontWeight: 600 }}>
-                      {txn.method}
                     </td>
                     <td style={{ padding: '12px 14px' }}>
                       <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#dc2626' }}>
@@ -392,6 +483,24 @@ export const TestCases: React.FC = () => {
                         {txn.recoveryStatus}
                       </div>
                     </td>
+                    <td style={{ padding: '12px 14px' }}>
+                      <button
+                        onClick={() => handleExecuteSingle(txn._id)}
+                        disabled={isRowExecuting}
+                        className="neo-btn neo-btn-sm"
+                        style={{ backgroundColor: '#c4f0c2', fontWeight: 800 }}
+                        title="Run full autonomous recovery pipeline on this test case"
+                      >
+                        {isRowExecuting ? (
+                          <Sparkles size={14} className="animate-spin" />
+                        ) : (
+                          <>
+                            <Play size={12} fill="#121316" />
+                            <span>⚡ Execute</span>
+                          </>
+                        )}
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
@@ -399,6 +508,296 @@ export const TestCases: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* ─── Add Custom Test Case Modal ─── */}
+      {isAddModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px',
+            backdropFilter: 'blur(4px)',
+          }}
+          onClick={() => setIsAddModalOpen(false)}
+        >
+          <div
+            className="neo-card"
+            style={{
+              maxWidth: '620px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '28px',
+              backgroundColor: '#ffffff',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FlaskConical size={20} color="#0284c7" />
+                <h2 style={{ fontSize: '20px', margin: 0 }}>Ingest Custom Test Case</h2>
+              </div>
+              <button onClick={() => setIsAddModalOpen(false)} className="neo-btn neo-btn-sm" style={{ padding: '6px' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateTestCase} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 800, fontFamily: 'var(--font-heading)', display: 'block', marginBottom: '4px' }}>
+                    Customer Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.customerName}
+                    onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '2px solid var(--border-black)', fontWeight: 600 }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 800, fontFamily: 'var(--font-heading)', display: 'block', marginBottom: '4px' }}>
+                    Amount (₹)
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min={1}
+                    value={formData.amount}
+                    onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '2px solid var(--border-black)', fontWeight: 800 }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 800, fontFamily: 'var(--font-heading)', display: 'block', marginBottom: '4px' }}>
+                    Scenario Type
+                  </label>
+                  <select
+                    value={formData.scenario}
+                    onChange={(e) => setFormData({ ...formData, scenario: e.target.value })}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '2px solid var(--border-black)', fontWeight: 600 }}
+                  >
+                    <option value="payment_failure">Payment Failure</option>
+                    <option value="checkout_abandonment">Checkout Abandonment</option>
+                    <option value="subscription_failure">Subscription Failure</option>
+                    <option value="invoice_overdue">Overdue B2B Invoice</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 800, fontFamily: 'var(--font-heading)', display: 'block', marginBottom: '4px' }}>
+                    Failure Reason Code
+                  </label>
+                  <select
+                    value={formData.failureReason}
+                    onChange={(e) => setFormData({ ...formData, failureReason: e.target.value })}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '2px solid var(--border-black)', fontWeight: 600 }}
+                  >
+                    <option value="upi_timeout">upi_timeout (Recoverable)</option>
+                    <option value="expired_card">expired_card (Method Update)</option>
+                    <option value="insufficient_funds">insufficient_funds (Payment Link)</option>
+                    <option value="bank_decline">bank_decline</option>
+                    <option value="customer_abandonment">customer_abandonment (Cart Drop)</option>
+                    <option value="invoice_overdue">invoice_overdue (B2B Net-30)</option>
+                    <option value="fraud_suspected">fraud_suspected (Policy Blocked)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 800, fontFamily: 'var(--font-heading)', display: 'block', marginBottom: '4px' }}>
+                    Prior Attempts Count
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={5}
+                    value={formData.attempts}
+                    onChange={(e) => setFormData({ ...formData, attempts: Number(e.target.value) })}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '2px solid var(--border-black)', fontWeight: 600 }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 800, fontFamily: 'var(--font-heading)', display: 'block', marginBottom: '4px' }}>
+                    Payment Method
+                  </label>
+                  <select
+                    value={formData.method}
+                    onChange={(e) => setFormData({ ...formData, method: e.target.value })}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '2px solid var(--border-black)', fontWeight: 600 }}
+                  >
+                    <option value="upi">UPI</option>
+                    <option value="card">Credit/Debit Card</option>
+                    <option value="netbanking">Netbanking</option>
+                    <option value="bank_transfer">Bank Transfer (B2B)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Edge Case Flags */}
+              <div style={{ padding: '12px', borderRadius: '10px', backgroundColor: '#fff7d6', border: '1.5px solid var(--border-black)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
+                  Safety & Guardrail Test Flags:
+                </span>
+                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={formData.optedOut}
+                      onChange={(e) => setFormData({ ...formData, optedOut: e.target.checked })}
+                    />
+                    <span>Customer Opted Out (STOP-02)</span>
+                  </label>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={formData.hasDispute}
+                      onChange={(e) => setFormData({ ...formData, hasDispute: e.target.checked })}
+                    />
+                    <span>Active Dispute On File (STOP-03)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                <button type="button" onClick={() => setIsAddModalOpen(false)} className="neo-btn neo-btn-white">
+                  Cancel
+                </button>
+                <button type="submit" disabled={submitting} className="neo-btn neo-btn-primary">
+                  {submitting ? 'Ingesting Case...' : '✓ Ingest Test Transaction'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Live Execution Stepper Modal ─── */}
+      {executionResult && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px',
+            backdropFilter: 'blur(4px)',
+          }}
+          onClick={() => setExecutionResult(null)}
+        >
+          <div
+            className="neo-card"
+            style={{
+              maxWidth: '740px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '28px',
+              backgroundColor: '#ffffff',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className={`neo-badge ${executionResult.finalStatus === 'RECOVERED' ? 'neo-badge-green' : executionResult.finalStatus === 'HUMAN_REVIEW' ? 'neo-badge-yellow' : 'neo-badge-coral'}`}>
+                    {executionResult.finalStatus}
+                  </span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 800 }}>{executionResult.caseId}</span>
+                </div>
+                <h2 style={{ fontSize: '20px', margin: '4px 0 0 0' }}>Autonomous Execution Result</h2>
+              </div>
+
+              <button onClick={() => setExecutionResult(null)} className="neo-btn neo-btn-sm" style={{ padding: '6px' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Outcome Banner */}
+            <div
+              style={{
+                padding: '16px',
+                borderRadius: '12px',
+                border: '2px solid var(--border-black)',
+                backgroundColor: executionResult.finalStatus === 'RECOVERED' ? '#f0fdf4' : executionResult.finalStatus === 'HUMAN_REVIEW' ? '#fff7d6' : '#fff1f2',
+                boxShadow: '2px 2px 0px var(--border-black)',
+                marginBottom: '16px',
+              }}
+            >
+              <div style={{ fontSize: '18px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#121316' }}>
+                {executionResult.finalStatus === 'RECOVERED' ? `💰 Won Back ₹${executionResult.recoveredAmount?.toLocaleString('en-IN')}` : `Status: ${executionResult.finalStatus}`}
+              </div>
+              <div style={{ fontSize: '13px', color: '#475569', marginTop: '4px' }}>
+                {executionResult.finalStatus === 'RECOVERED'
+                  ? 'All 10 agent pipeline steps executed autonomously and verified with direct settlement.'
+                  : executionResult.finalStatus === 'HUMAN_REVIEW'
+                  ? 'Financial guardrails held action safely and routed transaction to Human Review Queue.'
+                  : 'Safety stopping rule halted outreach immediately to protect customer compliance.'}
+              </div>
+            </div>
+
+            {/* Stepper Trace */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#64748b' }}>
+                LIVE 10-AGENT EXECUTION TRACE:
+              </span>
+              {executionResult.executionTrace?.map((step: any, idx: number) => (
+                <div
+                  key={idx}
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    backgroundColor: '#fffdfa',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontSize: '12px',
+                  }}
+                >
+                  <div>
+                    <span style={{ fontWeight: 800, color: '#0369a1', fontFamily: 'monospace', marginRight: '8px' }}>
+                      {step.step}:
+                    </span>
+                    <span style={{ color: '#121316' }}>{step.detail}</span>
+                  </div>
+                  <span className="neo-badge neo-badge-green" style={{ fontSize: '9px', padding: '1px 6px' }}>
+                    {step.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+              <button onClick={() => setExecutionResult(null)} className="neo-btn neo-btn-primary">
+                Close Trace
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

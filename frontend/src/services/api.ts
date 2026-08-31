@@ -36,6 +36,16 @@ export const getTestCases = async (): Promise<any> => {
   return data;
 };
 
+export const createTestCase = async (payload: any): Promise<any> => {
+  const { data } = await API.post('/test-cases', payload);
+  return data;
+};
+
+export const executeTestCase = async (id: string): Promise<any> => {
+  const { data } = await API.post(`/test-cases/${id}/execute`);
+  return data;
+};
+
 export const triggerBatchRun = async (): Promise<{ message: string; status: string }> => {
   const { data } = await API.post('/recovery/run-batch');
   return data;
