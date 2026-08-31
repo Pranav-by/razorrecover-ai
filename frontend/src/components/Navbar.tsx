@@ -6,9 +6,10 @@ interface NavbarProps {
   isRunning: boolean;
   onRunBatch: () => void;
   onResetData: () => void;
+  onOpenJudgeModal: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ isRunning, onRunBatch, onResetData }) => {
+export const Navbar: React.FC<NavbarProps> = ({ isRunning, onRunBatch, onResetData, onOpenJudgeModal }) => {
   const location = useLocation();
 
   const navLinks = [
@@ -94,31 +95,41 @@ export const Navbar: React.FC<NavbarProps> = ({ isRunning, onRunBatch, onResetDa
         </nav>
 
         {/* Actions Button Row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            onClick={onOpenJudgeModal}
+            className="neo-btn neo-btn-sm"
+            style={{ backgroundColor: '#e0f2fe', fontWeight: 800 }}
+            title="View Track 03 Judging Rubric & Evidence Matrix"
+          >
+            <Star size={14} fill="#0284c7" color="#0284c7" />
+            <span>Judge Rubric</span>
+          </button>
+
           <button
             onClick={onResetData}
             className="neo-btn neo-btn-white neo-btn-sm"
             title="Reset Mock Telemetry"
           >
             <RotateCcw size={14} />
-            <span>Reset Demo</span>
+            <span>Reset</span>
           </button>
 
           <button
             onClick={onRunBatch}
             disabled={isRunning}
             className={`neo-btn ${isRunning ? 'neo-btn-white' : 'neo-btn-primary'}`}
-            style={{ padding: '10px 20px' }}
+            style={{ padding: '10px 18px' }}
           >
             {isRunning ? (
               <>
                 <Sparkles size={16} className="animate-spin" />
-                <span>Processing Stream...</span>
+                <span>Processing...</span>
               </>
             ) : (
               <>
                 <Play size={16} fill="var(--border-black)" />
-                <span>Run Batch Recovery</span>
+                <span>Run Batch</span>
               </>
             )}
           </button>

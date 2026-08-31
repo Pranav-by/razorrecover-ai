@@ -7,9 +7,13 @@ import { getDashboardSummary, getRevenueBreakdown, getRecoveries, getLatestBatch
 import { IndianRupee, ShieldCheck, UserCheck, TrendingUp, AlertTriangle, Play, Sparkles, ChevronRight, Star, Plus, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import { DemoSandbox } from '../components/DemoSandbox';
+import { PromiseTracker } from '../components/PromiseTracker';
+
 interface DashboardProps {
   isRunning: boolean;
   onRunBatch: () => void;
+  onOpenJudgeModal?: () => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) => {
@@ -210,6 +214,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
           recoveredCount={summary.revenueRecovered}
         />
       </div>
+
+      {/* Interactive Track 03 Canonical Demo Sandbox (With Hinglish Voice AI) */}
+      <DemoSandbox />
+
+      {/* B2B Promise-to-Pay Tracker */}
+      <PromiseTracker />
 
       {/* Recent Recovered Transactions Table in Neo-Brutalist Style */}
       <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>

@@ -56,8 +56,11 @@ class ErrorBoundary extends Component<Props, State> {
   }
 }
 
+import { JudgeProofModal } from './components/JudgeProofModal';
+
 export const App: React.FC = () => {
   const [isRunningBatch, setIsRunningBatch] = useState(false);
+  const [isJudgeModalOpen, setIsJudgeModalOpen] = useState(false);
 
   const handleRunBatch = async () => {
     setIsRunningBatch(true);
@@ -89,16 +92,18 @@ export const App: React.FC = () => {
             isRunning={isRunningBatch}
             onRunBatch={handleRunBatch}
             onResetData={handleResetData}
+            onOpenJudgeModal={() => setIsJudgeModalOpen(true)}
           />
           <main style={{ maxWidth: '1440px', margin: '0 auto' }}>
             <Routes>
-              <Route path="/" element={<Dashboard isRunning={isRunningBatch} onRunBatch={handleRunBatch} />} />
+              <Route path="/" element={<Dashboard isRunning={isRunningBatch} onRunBatch={handleRunBatch} onOpenJudgeModal={() => setIsJudgeModalOpen(true)} />} />
               <Route path="/recoveries" element={<Recoveries />} />
               <Route path="/recoveries/:id" element={<RecoveryDetail />} />
               <Route path="/review" element={<ReviewQueue />} />
               <Route path="/policies" element={<Policies />} />
             </Routes>
           </main>
+          <JudgeProofModal isOpen={isJudgeModalOpen} onClose={() => setIsJudgeModalOpen(false)} />
         </div>
       </Router>
     </ErrorBoundary>
