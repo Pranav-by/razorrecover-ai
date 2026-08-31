@@ -4,7 +4,7 @@ import { AgentActivity } from '../components/AgentActivity';
 import { RevenueChart } from '../components/RevenueChart';
 import { DashboardSummary, RevenueBreakdown, RecoveryCase, BatchRun } from '../types';
 import { getDashboardSummary, getRevenueBreakdown, getRecoveries, getLatestBatch, exportAuditMatrix } from '../services/api';
-import { IndianRupee, ShieldCheck, UserCheck, TrendingUp, AlertTriangle, Play, Sparkles, ChevronRight, Star, Plus, Download } from 'lucide-react';
+import { IndianRupee, ShieldCheck, UserCheck, TrendingUp, AlertTriangle, Play, Sparkles, ChevronRight, Star, Plus, Download, FlaskConical } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { DemoSandbox } from '../components/DemoSandbox';
@@ -119,24 +119,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
             </div>
           </div>
 
-          <button
-            onClick={onRunBatch}
-            disabled={isRunning}
-            className="neo-btn neo-btn-primary neo-btn-lg"
-            style={{ width: '100%' }}
-          >
-            {isRunning ? (
-              <>
-                <Sparkles size={18} className="animate-spin" />
-                <span>Processing Autonomous Batch...</span>
-              </>
-            ) : (
-              <>
-                <Play size={18} fill="#121316" />
-                <span>▶ Run Autonomous Recovery Run</span>
-              </>
-            )}
-          </button>
+          <div style={{ display: 'flex', gap: '10px', width: '100%', flexWrap: 'wrap' }}>
+            <button
+              onClick={onRunBatch}
+              disabled={isRunning}
+              className="neo-btn neo-btn-primary neo-btn-lg"
+              style={{ flex: 1, minWidth: '220px' }}
+            >
+              {isRunning ? (
+                <>
+                  <Sparkles size={18} className="animate-spin" />
+                  <span>Processing Fleet Batch...</span>
+                </>
+              ) : (
+                <>
+                  <Play size={18} fill="#121316" />
+                  <span>▶ Run Full Fleet Batch</span>
+                </>
+              )}
+            </button>
+
+            <Link
+              to="/test-cases"
+              className="neo-btn neo-btn-white neo-btn-lg"
+              style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+            >
+              <FlaskConical size={18} color="#0284c7" />
+              <span>Single-Case Sandbox</span>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -364,7 +375,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
         )}
       </div>
 
-      {/* Floating Action Button (+) — Inspired by Reference */}
+      {/* Floating Action Button (+) — Ingest Custom Leak / Test Suite */}
       <div
         style={{
           position: 'fixed',
@@ -373,13 +384,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
           zIndex: 99,
         }}
       >
-        <button
-          onClick={onRunBatch}
+        <Link
+          to="/test-cases"
           className="neo-fab"
-          title="Run Autonomous Batch Recovery"
+          title="➕ Ingest Custom Leak / Open Test Suite"
+          style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
-          <Plus size={28} strokeWidth={3} />
-        </button>
+          <Plus size={28} strokeWidth={3} color="#121316" />
+        </Link>
       </div>
     </div>
   );
