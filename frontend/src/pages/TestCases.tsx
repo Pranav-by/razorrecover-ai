@@ -61,8 +61,39 @@ export const TestCases: React.FC = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await createTestCase(formData);
+      const res = await createTestCase(formData);
       setIsAddModalOpen(false);
+
+      // Instantly prepend to state so it immediately reflects at the top
+      if (res?.transaction) {
+        const newEnrichedTxn = {
+          _id: res.transaction._id,
+          paymentId: res.transaction.paymentId,
+          customerId: res.transaction.customerId,
+          customerName: res.transaction.customerName,
+          customerRiskLevel: formData.riskLevel,
+          optedOut: !!formData.optedOut,
+          hasDispute: !!formData.hasDispute,
+          amount: res.transaction.amount,
+          scenario: res.transaction.scenario,
+          method: res.transaction.method,
+          failureReason: res.transaction.failureReason,
+          attempts: res.transaction.attempts,
+          orderDescription: res.transaction.orderDescription,
+          recoveryStatus: 'PENDING_EXECUTION',
+          recoveredAmount: 0,
+          caseId: res.recoveryCase?.caseId || null,
+          isCustomTest: true
+        };
+
+        setData((prev: any) => ({
+          ...prev,
+          totalTestCases: (prev?.totalTestCases || 0) + 1,
+          ingestedTransactionsCount: (prev?.ingestedTransactionsCount || 0) + 1,
+          transactions: [newEnrichedTxn, ...(prev?.transactions || [])]
+        }));
+      }
+
       await fetchTestCases();
     } catch (err) {
       console.error('Error creating test case:', err);
@@ -174,6 +205,7 @@ export const TestCases: React.FC = () => {
   ];
 
   const transactions = data?.transactions || [];
+  const customTransactions = transactions.filter((t: any) => t.isCustomTest);
   const unitTests = data?.unitTests || [];
 
   const filteredTransactions = transactions.filter((t: any) => {
@@ -250,6 +282,88 @@ export const TestCases: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* 🌟 Custom Ingested Test Cases Showcase (Reflects at the Top!) */}
+      {customTransactions.length > 0 && (
+        <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#fffdfa', border: '2.5px solid #0284c7', boxShadow: '4px 4px 0px #0284c7' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div className="neo-badge neo-badge-blue" style={{ fontSize: '12px', padding: '4px 10px' }}>
+                <Sparkles size={14} />
+                <span>🌟 Newly Ingested Custom Test Cases ({customTransactions.length})</span>
+              </div>
+              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
+                Custom user-created scenarios ready for instant autonomous execution
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '14px' }}>
+            {customTransactions.map((tc: any) => {
+              const isExec = executingId === tc._id || executingId === tc.paymentId;
+              const dynamicRes = benchmarkResults[tc._id] || benchmarkResults[tc.paymentId];
+
+              let statusBadge = dynamicRes?.badgeClass || (tc.recoveryStatus === 'RECOVERED' ? 'neo-badge-green' : tc.recoveryStatus === 'HUMAN_REVIEW' ? 'neo-badge-coral' : 'neo-badge-yellow');
+              let statusText = dynamicRes?.status || tc.recoveryStatus;
+
+              return (
+                <div
+                  key={tc._id}
+                  style={{
+                    padding: '16px',
+                    borderRadius: '12px',
+                    border: '2px solid var(--border-black)',
+                    backgroundColor: '#ffffff',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    gap: '10px',
+                    boxShadow: '2px 2px 0px var(--border-black)',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '15px' }}>{tc.customerName}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>{tc.paymentId} • {tc.scenario.replace(/_/g, ' ').toUpperCase()}</div>
+                    </div>
+                    <div className={`neo-badge ${statusBadge}`} style={{ fontSize: '10px' }}>
+                      {statusText}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', backgroundColor: '#fff7d6', padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--border-black)' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700 }}>Failure: {tc.failureReason}</span>
+                    <span style={{ fontFamily: 'var(--font-heading)', fontSize: '16px', fontWeight: 800 }}>₹{tc.amount?.toLocaleString('en-IN')}</span>
+                  </div>
+
+                  <div style={{ fontSize: '11px', color: '#475569' }}>
+                    <strong>Risk Flags:</strong> {tc.optedOut ? '🛑 Opted Out' : '✓ Consented'} • {tc.hasDispute ? '⚠️ Active Dispute' : 'Clean Record'} • Attempts: {tc.attempts}
+                  </div>
+
+                  <button
+                    onClick={() => handleExecuteSingle(tc._id)}
+                    disabled={isExec}
+                    className="neo-btn neo-btn-sm"
+                    style={{ backgroundColor: '#c4f0c2', fontWeight: 800, width: '100%' }}
+                  >
+                    {isExec ? (
+                      <>
+                        <Sparkles size={14} className="animate-spin" />
+                        <span>Evaluating Pipeline...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play size={12} fill="#121316" />
+                        <span>⚡ Run Autonomous Pipeline</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* 18 Automated Unit Tests Showcase Box */}
       <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#121316', color: '#ffffff' }}>

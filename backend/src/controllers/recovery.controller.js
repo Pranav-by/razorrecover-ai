@@ -142,7 +142,9 @@ class RecoveryController {
       const Transaction = require('../models/Transaction');
       const Customer = require('../models/Customer');
 
-      const transactions = await Transaction.find({ scenario: { $ne: 'successful' } }).sort({ createdAt: -1 }).lean();
+      const transactions = await Transaction.find({ scenario: { $ne: 'successful' } })
+        .sort({ isCustomTest: -1, createdAt: -1, _id: -1 })
+        .lean();
       const cases = await RecoveryCase.find().lean();
       const customers = await Customer.find().lean();
 
@@ -171,7 +173,8 @@ class RecoveryController {
           orderDescription: t.orderDescription,
           recoveryStatus: rCase?.status || 'PENDING_BATCH',
           recoveredAmount: rCase?.recoveredAmount || 0,
-          caseId: rCase?.caseId || null
+          caseId: rCase?.caseId || null,
+          isCustomTest: !!t.isCustomTest
         };
       });
 
@@ -258,6 +261,7 @@ class RecoveryController {
         scenario,
         attempts: Number(attempts),
         orderDescription,
+        isCustomTest: true,
         createdAt: new Date()
       });
 
