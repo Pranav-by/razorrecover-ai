@@ -31,6 +31,11 @@ export const getRecoveryById = async (id: string): Promise<RecoveryCase> => {
   return data;
 };
 
+export const getTestCases = async (): Promise<any> => {
+  const { data } = await API.get('/test-cases');
+  return data;
+};
+
 export const triggerBatchRun = async (): Promise<{ message: string; status: string }> => {
   const { data } = await API.post('/recovery/run-batch');
   return data;

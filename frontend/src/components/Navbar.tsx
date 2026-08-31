@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Zap, Play, RotateCcw, ShieldCheck, Layers, UserCheck, LayoutDashboard, Star, Sparkles } from 'lucide-react';
+import { Zap, Play, RotateCcw, ShieldCheck, Layers, UserCheck, LayoutDashboard, Star, Sparkles, FlaskConical } from 'lucide-react';
 
 interface NavbarProps {
   isRunning: boolean;
@@ -15,6 +15,7 @@ export const Navbar: React.FC<NavbarProps> = ({ isRunning, onRunBatch, onResetDa
   const navLinks = [
     { path: '/', label: 'Overview', icon: LayoutDashboard },
     { path: '/recoveries', label: 'Revenue Cases', icon: Layers },
+    { path: '/test-cases', label: 'Test Suite', icon: FlaskConical },
     { path: '/review', label: 'Review Queue', icon: UserCheck },
     { path: '/policies', label: 'Guardrails', icon: ShieldCheck },
   ];
