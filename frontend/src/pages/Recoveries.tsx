@@ -931,17 +931,49 @@ export const Recoveries: React.FC = () => {
               </div>
             </div>
 
-            {/* 4-Step Autonomous Progression Ladder */}
+            {/* 4-Step Autonomous Progression Ladder (Scenario-Specific) */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
               <span style={{ fontSize: '12px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#64748b' }}>
                 10-AGENT AUTONOMOUS RECOVERY PIPELINE:
               </span>
 
               {[
-                { step: 1, title: 'Step 1: Revenue Leak Detection & Priority', desc: `Detected ${inspectingCase.scenario?.replace(/_/g, ' ')} incident and calculated priority score.` },
-                { step: 2, title: 'Step 2: Policy Engine & Safety Restraints', desc: 'Verified ₹10,000 auto threshold (POL-01), 2-retry cap (POL-02), and opt-out status (STOP-02).' },
-                { step: 3, title: 'Step 3: Razorpay API Action Execution', desc: `Dispatched ${inspectingCase.recommendedAction || 'retry_payment'} with deterministic idempotency key.` },
-                { step: 4, title: 'Step 4: Verification & Cryptographic Audit Seal', desc: 'Settlement verified via Razorpay API and sealed into append-only SHA-256 ledger.' },
+                {
+                  step: 1,
+                  title: 'Step 1: Revenue Leak Detection & Priority',
+                  desc: `Detected ${inspectingCase.scenario?.replace(/_/g, ' ')} incident and calculated priority score (EV: ₹${(inspectingCase.expectedRecoveryValue || Math.round((inspectingCase.amountAtRisk || 5000) * 0.85)).toLocaleString('en-IN')}).`
+                },
+                {
+                  step: 2,
+                  title: 'Step 2: Policy Engine & Safety Restraints',
+                  desc: inspectingCase.amountAtRisk > 10000
+                    ? '⚠️ Amount exceeds ₹10,000 auto-threshold (POL-01) → Escalated to Human Review Queue.'
+                    : '✓ Verified auto-threshold (POL-01), 2-retry cap (POL-02), and opt-out status (STOP-02).'
+                },
+                {
+                  step: 3,
+                  title: inspectingCase.scenario === 'subscription_failure'
+                    ? 'Step 3: Razorpay Mandate Update Execution'
+                    : inspectingCase.scenario === 'checkout_abandonment'
+                    ? 'Step 3: Dynamic Cart Recovery Link Dispatch'
+                    : inspectingCase.scenario === 'invoice_overdue'
+                    ? 'Step 3: Conversational Dunning Escalation'
+                    : 'Step 3: Razorpay Payment Gateway Smart Retry',
+                  desc: inspectingCase.scenario === 'subscription_failure'
+                    ? 'Dispatched secure card update link with tokenized auto-billing re-authorization.'
+                    : inspectingCase.scenario === 'checkout_abandonment'
+                    ? 'Generated checkout recovery link within 09:00–19:00 IST communication window.'
+                    : inspectingCase.scenario === 'invoice_overdue'
+                    ? 'Engaged finance contact and registered promise-to-pay commitment calendar.'
+                    : `Dispatched ${inspectingCase.recommendedAction || 'retry_payment'} with deterministic idempotency key.`
+                },
+                {
+                  step: 4,
+                  title: 'Step 4: Verification & Cryptographic Audit Seal',
+                  desc: inspectingCase.status === 'RECOVERED'
+                    ? '💰 Settlement verified via Razorpay API and sealed into append-only SHA-256 ledger.'
+                    : 'Audit trail recorded transition with immutable cryptographic hash.'
+                },
               ].map((ladder) => {
                 const isPassed = inspectingCase.status === 'RECOVERED' || ladder.step <= 2;
 
@@ -985,9 +1017,9 @@ export const Recoveries: React.FC = () => {
               })}
             </div>
 
-            {/* Quick Actions */}
+            {/* Quick Actions (Scenario-Tailored) */}
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <button
                   onClick={() => handleExecuteSingleCase(inspectingCase.caseId || inspectingCase._id || inspectingCase.paymentId)}
                   disabled={executingCaseId === inspectingCase.caseId}
@@ -1001,21 +1033,69 @@ export const Recoveries: React.FC = () => {
                   ) : (
                     <>
                       <Play size={14} fill="#121316" />
-                      <span>⚡ Run Pipeline on Case</span>
+                      <span>
+                        {inspectingCase.status === 'HUMAN_REVIEW'
+                          ? '👤 Operator Approve & Execute'
+                          : inspectingCase.status === 'RECOVERED'
+                          ? '⚡ Re-Run Pipeline Test'
+                          : '⚡ Run Pipeline on Case'}
+                      </span>
                     </>
                   )}
                 </button>
 
-                <button
-                  onClick={() => {
-                    setModalSimulatedAction('Dispatched Razorpay WhatsApp & SMS recovery message');
-                    setTimeout(() => setModalSimulatedAction(null), 2500);
-                  }}
-                  className="neo-btn neo-btn-sm neo-btn-white"
-                >
-                  <Send size={14} />
-                  <span>Send Razorpay Link</span>
-                </button>
+                {/* Dynamic Scenario-Specific Trigger Button */}
+                {inspectingCase.scenario === 'subscription_failure' && (
+                  <button
+                    onClick={() => {
+                      setModalSimulatedAction('Dispatched card update link with 7-day grace period via Razorpay Subscriptions API');
+                      setTimeout(() => setModalSimulatedAction(null), 3000);
+                    }}
+                    className="neo-btn neo-btn-sm neo-btn-white"
+                  >
+                    <Send size={14} />
+                    <span>Dispatch Card Update Link</span>
+                  </button>
+                )}
+
+                {inspectingCase.scenario === 'payment_failure' && (
+                  <button
+                    onClick={() => {
+                      setModalSimulatedAction('Triggered automated idempotent UPI/Card gateway retry via Razorpay API');
+                      setTimeout(() => setModalSimulatedAction(null), 3000);
+                    }}
+                    className="neo-btn neo-btn-sm neo-btn-white"
+                  >
+                    <Play size={14} />
+                    <span>Trigger Smart Payment Retry</span>
+                  </button>
+                )}
+
+                {inspectingCase.scenario === 'checkout_abandonment' && (
+                  <button
+                    onClick={() => {
+                      setModalSimulatedAction('Generated personalized Razorpay payment link with 5% winback incentive');
+                      setTimeout(() => setModalSimulatedAction(null), 3000);
+                    }}
+                    className="neo-btn neo-btn-sm neo-btn-white"
+                  >
+                    <Send size={14} />
+                    <span>Send WhatsApp Cart Link</span>
+                  </button>
+                )}
+
+                {inspectingCase.scenario === 'invoice_overdue' && (
+                  <button
+                    onClick={() => {
+                      setModalSimulatedAction('Dispatched automated B2B invoice reminder & registered Promise-to-Pay tracking');
+                      setTimeout(() => setModalSimulatedAction(null), 3000);
+                    }}
+                    className="neo-btn neo-btn-sm neo-btn-white"
+                  >
+                    <Clock size={14} />
+                    <span>Send B2B Dunning Reminder</span>
+                  </button>
+                )}
               </div>
 
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
