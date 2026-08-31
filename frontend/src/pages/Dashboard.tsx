@@ -3,8 +3,8 @@ import { MetricCard } from '../components/MetricCard';
 import { AgentActivity } from '../components/AgentActivity';
 import { RevenueChart } from '../components/RevenueChart';
 import { DashboardSummary, RevenueBreakdown, RecoveryCase, BatchRun } from '../types';
-import { getDashboardSummary, getRevenueBreakdown, getRecoveries, getLatestBatch } from '../services/api';
-import { IndianRupee, ShieldCheck, UserCheck, TrendingUp, AlertTriangle, Play, Sparkles, ChevronRight, Star, Plus } from 'lucide-react';
+import { getDashboardSummary, getRevenueBreakdown, getRecoveries, getLatestBatch, exportAuditMatrix } from '../services/api';
+import { IndianRupee, ShieldCheck, UserCheck, TrendingUp, AlertTriangle, Play, Sparkles, ChevronRight, Star, Plus, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface DashboardProps {
@@ -221,10 +221,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
             </span>
           </div>
 
-          <Link to="/recoveries" className="neo-btn neo-btn-white neo-btn-sm">
-            <span>View All Cases</span>
-            <ChevronRight size={14} />
-          </Link>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <button
+              onClick={() => exportAuditMatrix('csv')}
+              className="neo-btn neo-btn-sm"
+              style={{ backgroundColor: '#c4f0c2', fontWeight: 700 }}
+              title="Download full audit matrix CSV for independent verification"
+            >
+              <Download size={14} />
+              <span>Download Audit Matrix</span>
+            </button>
+            <Link to="/recoveries" className="neo-btn neo-btn-white neo-btn-sm">
+              <span>View All Cases</span>
+              <ChevronRight size={14} />
+            </Link>
+          </div>
         </div>
 
         {recentCases && recentCases.length > 0 ? (

@@ -149,26 +149,61 @@ export const RecoveryDetail: React.FC = () => {
                 <BrainCircuit size={20} />
               </div>
               <div>
-                <h3 style={{ fontSize: '18px', margin: 0 }}>AI Decision & Diagnostic Synthesis</h3>
-                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>OpenAI gpt-4o-mini Evaluation</span>
+                <h3 style={{ fontSize: '18px', margin: 0 }}>AI Diagnostic Analysis</h3>
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>OpenAI gpt-4o-mini Root Cause Evaluation</span>
               </div>
             </div>
 
-            {/* Diagnostic Reasoning Quote */}
+            {/* Diagnosis Category Badge */}
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div className="neo-badge neo-badge-yellow" style={{ fontSize: '12px', padding: '4px 12px' }}>
+                <BrainCircuit size={12} />
+                <span>{(caseData.diagnosis?.category || 'analyzing').replace(/_/g, ' ').toUpperCase()}</span>
+              </div>
+              <div className={`neo-badge ${(caseData.diagnosis?.confidence || 0) >= 0.8 ? 'neo-badge-green' : (caseData.diagnosis?.confidence || 0) >= 0.5 ? 'neo-badge-blue' : 'neo-badge-coral'}`} style={{ fontSize: '12px', padding: '4px 12px' }}>
+                <span>Confidence: {Math.round((caseData.diagnosis?.confidence || 0) * 100)}%</span>
+              </div>
+              {caseData.diagnosis?.recoverability && (
+                <div className={`neo-badge ${caseData.diagnosis.recoverability === 'high' ? 'neo-badge-green' : caseData.diagnosis.recoverability === 'medium' ? 'neo-badge-yellow' : 'neo-badge-coral'}`} style={{ fontSize: '12px', padding: '4px 12px' }}>
+                  <span>Recoverability: {caseData.diagnosis.recoverability.toUpperCase()}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Confidence Indicator Bar */}
+            <div style={{ padding: '4px 0' }}>
+              <div style={{
+                height: '8px',
+                borderRadius: '4px',
+                border: '1.5px solid var(--border-black)',
+                backgroundColor: '#f1f5f9',
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  height: '100%',
+                  width: `${Math.round((caseData.diagnosis?.confidence || 0) * 100)}%`,
+                  backgroundColor: (caseData.diagnosis?.confidence || 0) >= 0.8 ? '#22c55e' : (caseData.diagnosis?.confidence || 0) >= 0.5 ? '#3b82f6' : '#ff5757',
+                  borderRadius: '4px',
+                  transition: 'width 0.6s ease',
+                }} />
+              </div>
+            </div>
+
+            {/* AI Reasoning Quote — the focal point */}
             <div
               style={{
                 padding: '16px',
                 borderRadius: '14px',
                 border: '2px solid var(--border-black)',
-                backgroundColor: '#fffdfa',
+                backgroundColor: '#faf5ff',
                 boxShadow: '2px 2px 0px var(--border-black)',
               }}
             >
-              <div style={{ fontSize: '11px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>
-                ROOT CAUSE DIAGNOSIS
+              <div style={{ fontSize: '11px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#7c3aed', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>
+                💡 AI REASONING SUMMARY
               </div>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: '#121316', lineHeight: 1.5 }}>
-                {caseData.diagnosis?.reasoning || 'Evaluated telemetry signatures and identified recoverable payment state.'}
+              <div style={{ fontSize: '14px', fontWeight: 600, color: '#121316', lineHeight: 1.6, fontStyle: 'italic' }}>
+                "{caseData.diagnosis?.reasoning || 'Evaluated telemetry signatures and identified recoverable payment state.'}"
               </div>
             </div>
 
@@ -190,7 +225,7 @@ export const RecoveryDetail: React.FC = () => {
                   {Math.round((caseData.recoveryProbability || 0) * 100)}%
                 </div>
                 <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>
-                  Expected Win: ₹{caseData.expectedRecoveryValue}
+                  Expected Win: ₹{caseData.expectedRecoveryValue?.toLocaleString('en-IN') || 0}
                 </div>
               </div>
 
@@ -210,7 +245,7 @@ export const RecoveryDetail: React.FC = () => {
                   {caseData.recommendedAction?.replace(/_/g, ' ') || 'None'}
                 </div>
                 <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>
-                  Autonomous Intervention
+                  {caseData.policyDecision?.allowed ? '✓ Policy Approved' : '❌ Policy Blocked'} • Attempt #{caseData.attemptCount || 0}
                 </div>
               </div>
             </div>

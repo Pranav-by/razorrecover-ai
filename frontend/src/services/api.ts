@@ -71,4 +71,21 @@ export const seedData = async (): Promise<any> => {
   return data;
 };
 
+export const exportAuditMatrix = async (format: 'csv' | 'json' = 'csv'): Promise<void> => {
+  const response = await API.get(`/recovery/batch/latest/export?format=${format}`, {
+    responseType: format === 'csv' ? 'blob' : 'json',
+  });
+  if (format === 'csv') {
+    const blob = new Blob([response.data], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `razorrecover_audit_matrix_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }
+};
+
 export default API;

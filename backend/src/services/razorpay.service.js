@@ -87,26 +87,31 @@ class RazorpayService {
   /**
    * Simulate a payment action (for hackathon demo).
    * In test mode, we simulate the outcome since we can't trigger actual customer payments.
+   * Demo cases have deterministic outcomes for reproducible demos.
    */
   static async simulateRecoveryAction(action, recoveryCase) {
-    // Simulate based on recovery probability
-    const willSucceed = Math.random() < recoveryCase.recoveryProbability;
+    const paymentId = recoveryCase.transactionId?.paymentId;
 
-    // For demo cases, force specific outcomes
+    // ── Deterministic demo cases ──
     const demoOutcomes = {
-      'pay_demo_001': true,   // Always recover
-      'pay_demo_002': true,   // Always recover
-      'pay_demo_003': true,   // Always recover
-      'pay_demo_004': 'promise', // Promise to pay
+      'pay_demo_001': { success: true, result: 'success', data: { verified: true, razorpayOrderId: 'order_demo_001_recovered' } },
+      'pay_demo_002': { success: true, result: 'success', data: { verified: true, paymentLinkId: 'plink_demo_002_converted' } },
+      'pay_demo_003': { success: true, result: 'success', data: { verified: true, methodUpdated: true } },
+      'pay_demo_004': { success: true, result: 'promise_to_pay', data: { promiseDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000) } },
+      'pay_demo_005': { success: false, result: 'failed', data: { reason: 'policy_blocked_before_execution' } },
+      'pay_demo_optout': { success: false, result: 'failed', data: { reason: 'stopping_rule_customer_opt_out' } },
+      'pay_demo_dispute': { success: false, result: 'failed', data: { reason: 'stopping_rule_dispute_raised' } },
     };
 
-    const paymentId = recoveryCase.transactionId?.paymentId;
-    if (demoOutcomes[paymentId] !== undefined) {
-      if (demoOutcomes[paymentId] === 'promise') {
-        return { success: true, result: 'promise_to_pay', data: { promiseDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000) } };
-      }
-      return { success: demoOutcomes[paymentId], result: demoOutcomes[paymentId] ? 'success' : 'failed', data: {} };
+    if (demoOutcomes[paymentId]) {
+      logger.agent('RAZORPAY', `Demo case ${paymentId}: deterministic outcome → ${demoOutcomes[paymentId].result}`);
+      return demoOutcomes[paymentId];
     }
+
+    // ── Non-demo cases: probability-weighted simulation ──
+    // Use recovery probability to determine success, with a floor of 60% for realistic demo numbers
+    const effectiveProb = Math.max(recoveryCase.recoveryProbability || 0.5, 0.60);
+    const willSucceed = Math.random() < effectiveProb;
 
     return {
       success: willSucceed,
