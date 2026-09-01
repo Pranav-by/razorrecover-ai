@@ -274,11 +274,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
                   <th style={{ padding: '12px 14px' }}>Case ID</th>
                   <th style={{ padding: '12px 14px' }}>Customer</th>
                   <th style={{ padding: '12px 14px' }}>Scenario</th>
-                  <th style={{ padding: '12px 14px' }}>Amount</th>
+                  <th style={{ padding: '12px 14px' }}>Amount at Risk</th>
                   <th style={{ padding: '12px 14px' }}>Strategy Action</th>
                   <th style={{ padding: '12px 14px' }}>Status</th>
-                  <th style={{ padding: '12px 14px' }}>1-Click Execute</th>
-                  <th style={{ padding: '12px 14px' }}>Inspect & Delete</th>
+                  <th style={{ padding: '12px 14px' }}>Quick Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -287,8 +286,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
                   if (item.status === 'RECOVERED') badgeClass = 'neo-badge-green';
                   else if (item.status === 'BLOCKED' || item.status === 'HALTED') badgeClass = 'neo-badge-coral';
                   else if (item.status === 'HUMAN_REVIEW' || item.status === 'PAUSED') badgeClass = 'neo-badge-yellow';
-
-                  const isRowExecuting = executingCaseId === item.caseId;
 
                   const strategy = item.recommendedAction
                     ? item.recommendedAction.replace(/_/g, ' ')
@@ -358,42 +355,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
                         </div>
                       </td>
                       <td style={{ padding: '12px 14px' }} onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => handleExecuteSingleCase(item.caseId)}
-                          disabled={isRowExecuting}
-                          className="neo-btn neo-btn-sm"
-                          style={{ backgroundColor: '#c4f0c2', fontWeight: 800 }}
-                          title="Execute full 10-agent pipeline on this single case"
-                        >
-                          {isRowExecuting ? (
-                            <Sparkles size={14} className="animate-spin" />
-                          ) : (
-                            <>
-                              <Play size={12} fill="#121316" />
-                              <span>⚡ Run Single</span>
-                            </>
-                          )}
-                        </button>
-                      </td>
-                      <td style={{ padding: '12px 14px' }} onClick={(e) => e.stopPropagation()}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <button
                             onClick={() => setInspectingCase(item)}
-                            style={{
-                              width: '28px',
-                              height: '28px',
-                              borderRadius: '8px',
-                              border: '1.5px solid var(--border-black)',
-                              backgroundColor: '#ffe600',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              boxShadow: '1px 1px 0px var(--border-black)',
-                              cursor: 'pointer',
-                            }}
-                            title="Inspect case modal"
+                            className="neo-btn neo-btn-sm neo-btn-white"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 800, fontSize: '11px', padding: '4px 8px' }}
+                            title="Inspect case telemetry"
                           >
-                            <ChevronRight size={16} color="#121316" />
+                            <span>⚡ Inspect</span>
+                            <ChevronRight size={14} />
                           </button>
 
                           <button
@@ -411,7 +381,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
                               border: '1.5px solid var(--border-black)',
                               boxShadow: '1px 1px 0px var(--border-black)',
                             }}
-                            title="Manually delete this test case record"
+                            title="Delete case record"
                           >
                             <Trash2 size={13} color="#dc2626" />
                           </button>
