@@ -115,16 +115,20 @@ export const CustomerPortal: React.FC = () => {
   const fetchCases = async (selectId?: string) => {
     setLoading(true);
     try {
-      const res = await getRecoveries({ limit: 200, includeCatalog: 'true' } as any);
-      setCases(res.cases);
+      const res = await getRecoveries({ limit: 200 });
+      setCases(res.cases || []);
       if (selectId) {
-        const found = res.cases.find((c: any) => c.caseId === selectId || c._id === selectId || c.paymentId === selectId);
+        const found = (res.cases || []).find((c: any) => c.caseId === selectId || c._id === selectId || c.paymentId === selectId);
         if (found) setSelectedCase(found);
-      } else if (!selectedCase && res.cases.length > 0) {
-        setSelectedCase(res.cases[0]);
-      } else if (selectedCase) {
-        const updated = res.cases.find((c: any) => (c.caseId && c.caseId === selectedCase.caseId) || (c._id && c._id === selectedCase._id));
-        if (updated) setSelectedCase(updated);
+      } else if (res.cases && res.cases.length > 0) {
+        if (!selectedCase || !res.cases.some((c: any) => c.caseId === selectedCase.caseId)) {
+          setSelectedCase(res.cases[0]);
+        } else {
+          const updated = res.cases.find((c: any) => c.caseId === selectedCase.caseId);
+          if (updated) setSelectedCase(updated);
+        }
+      } else {
+        setSelectedCase(null);
       }
     } catch (err) {
       console.error('Failed to load dynamic cases for customer portal:', err);
@@ -367,56 +371,66 @@ export const CustomerPortal: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '560px', overflowY: 'auto', paddingRight: '4px' }}>
-              {filteredCases.map((c: any) => {
-                const isSelected = selectedCase?.caseId === c.caseId || selectedCase?._id === c._id;
-                let badgeClass = 'neo-badge-blue';
-                if (c.status === 'RECOVERED') badgeClass = 'neo-badge-green';
-                else if (c.status === 'HUMAN_REVIEW' || c.status === 'PAUSED') badgeClass = 'neo-badge-yellow';
-                else if (c.status === 'HALTED' || c.status === 'BLOCKED') badgeClass = 'neo-badge-coral';
+              {filteredCases.length > 0 ? (
+                filteredCases.map((c: any) => {
+                  const isSelected = selectedCase?.caseId === c.caseId || selectedCase?._id === c._id;
+                  let badgeClass = 'neo-badge-blue';
+                  if (c.status === 'RECOVERED') badgeClass = 'neo-badge-green';
+                  else if (c.status === 'HUMAN_REVIEW' || c.status === 'PAUSED') badgeClass = 'neo-badge-yellow';
+                  else if (c.status === 'HALTED' || c.status === 'BLOCKED') badgeClass = 'neo-badge-coral';
 
-                return (
-                  <div
-                    key={c._id || c.caseId}
-                    onClick={() => {
-                      setSelectedCase(c);
-                      setActionSuccessMessage(null);
-                    }}
-                    style={{
-                      padding: '12px 14px',
-                      borderRadius: '12px',
-                      border: isSelected ? '2.5px solid #0284c7' : '1.5px solid var(--border-black)',
-                      backgroundColor: isSelected ? '#e0f2fe' : '#ffffff',
-                      boxShadow: isSelected ? '3px 3px 0px #0284c7' : '1.5px 1.5px 0px var(--border-black)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: 800, fontSize: '13px', color: '#121316' }}>{c.customerName}</div>
-                      <div style={{ fontSize: '11px', color: '#64748b' }}>
-                        {c.caseId} • {c.scenario?.replace(/_/g, ' ').toUpperCase()}
+                  return (
+                    <div
+                      key={c._id || c.caseId}
+                      onClick={() => {
+                        setSelectedCase(c);
+                        setActionSuccessMessage(null);
+                      }}
+                      style={{
+                        padding: '12px 14px',
+                        borderRadius: '12px',
+                        border: isSelected ? '2.5px solid #0284c7' : '1.5px solid var(--border-black)',
+                        backgroundColor: isSelected ? '#e0f2fe' : '#ffffff',
+                        boxShadow: isSelected ? '3px 3px 0px #0284c7' : '1.5px 1.5px 0px var(--border-black)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '13px', color: '#121316' }}>{c.customerName}</div>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>
+                          {c.caseId} • {c.scenario?.replace(/_/g, ' ').toUpperCase()}
+                        </div>
+                      </div>
+
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '14px' }}>
+                          ₹{(c.amountAtRisk || c.amount || 0).toLocaleString('en-IN')}
+                        </div>
+                        <div className={`neo-badge ${badgeClass}`} style={{ fontSize: '9px', padding: '1px 6px' }}>
+                          {c.status}
+                        </div>
                       </div>
                     </div>
-
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '14px' }}>
-                        ₹{(c.amountAtRisk || c.amount || 0).toLocaleString('en-IN')}
-                      </div>
-                      <div className={`neo-badge ${badgeClass}`} style={{ fontSize: '9px', padding: '1px 6px' }}>
-                        {c.status}
-                      </div>
-                    </div>
+                  );
+                })
+              ) : (
+                <div style={{ padding: '36px 16px', textAlign: 'center', color: '#64748b', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                  <Smartphone size={36} color="#94a3b8" />
+                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#334155' }}>No Active Live Customer Incidents</div>
+                  <div style={{ fontSize: '12px', lineHeight: 1.5, maxWidth: '280px' }}>
+                    Click <strong>"Run Batch"</strong> in the top bar to evaluate all 180 baseline leaks, or switch to the <strong>"Live Checkout Sandbox"</strong> tab to simulate a live customer checkout drop!
                   </div>
-                );
-              })}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Right Column: Customer Interactive Mobile/Web Sheet */}
-          {selectedCase && (
+          {selectedCase ? (
             <div className="neo-card" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px', backgroundColor: '#ffffff' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid var(--border-black)', paddingBottom: '16px' }}>
                 <div>
@@ -596,6 +610,24 @@ export const CustomerPortal: React.FC = () => {
                   🔒 100% Real-Time MongoDB Synced
                 </span>
               </div>
+            </div>
+          ) : (
+            <div className="neo-card" style={{ padding: '36px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', gap: '16px', backgroundColor: '#ffffff', minHeight: '360px' }}>
+              <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <MessageSquare size={32} color="#64748b" />
+              </div>
+              <h3 style={{ fontSize: '18px', margin: 0, color: '#1e293b' }}>Awaiting Customer Incident Stream</h3>
+              <p style={{ fontSize: '13px', color: '#64748b', maxWidth: '360px', margin: 0 }}>
+                Click <strong>"Run Batch"</strong> in the top header to run the winback pipeline on your 180 test cases, or switch to the <strong>"Live Checkout Sandbox"</strong> tab to trigger a real-time customer leak!
+              </p>
+              <button
+                onClick={() => setActiveTab('simulator')}
+                className="neo-btn neo-btn-primary"
+                style={{ fontWeight: 800 }}
+              >
+                <ShoppingBag size={14} />
+                <span>Simulate Drop in Sandbox &gt;</span>
+              </button>
             </div>
           )}
         </div>
