@@ -29,8 +29,17 @@ class DemoController {
       await RecoveryAction.deleteMany({});
       await AuditLog.collection.drop().catch(() => {});
       await BatchRun.deleteMany({});
+      
+      // Delete any user-ingested custom test transactions
+      await Transaction.deleteMany({ isCustomTest: true });
+      
+      // Reset all customer guardrail flags (opt-out, disputes)
+      await Customer.updateMany({}, { $set: { optedOut: false, disputeHistory: [] } });
 
-      res.json({ message: 'Recovery data cleared. Transactions and customers preserved. Ready for a new batch run.' });
+      // Reset transaction statuses to initial failed state
+      await Transaction.updateMany({}, { $set: { status: 'failed' } });
+
+      res.json({ message: 'Recovery engine reset. All custom test cases cleared, customer guardrail flags restored, and 180 baseline incidents reset to fresh DETECTED state ready for a new batch run.' });
     } catch (err) { next(err); }
   }
 

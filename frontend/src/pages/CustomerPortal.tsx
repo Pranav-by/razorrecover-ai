@@ -306,9 +306,9 @@ export const CustomerPortal: React.FC = () => {
 
       {/* ─── TAB 1: Customer Outreach & Action Hub ─── */}
       {activeTab === 'outreach' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 400px) 1fr', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '24px', alignItems: 'stretch' }}>
           {/* Left Column: Select Case / Customer Stream */}
-          <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', height: '100%', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <h3 style={{ fontSize: '18px', margin: 0 }}>Live Customer Incidents ({filteredCases.length})</h3>
