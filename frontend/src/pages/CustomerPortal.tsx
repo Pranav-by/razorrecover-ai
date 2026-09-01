@@ -115,7 +115,7 @@ export const CustomerPortal: React.FC = () => {
   const fetchCases = async (selectId?: string) => {
     setLoading(true);
     try {
-      const res = await getRecoveries({ limit: 200 });
+      const res = await getRecoveries({ limit: 200, includeCatalog: 'true' } as any);
       setCases(res.cases);
       if (selectId) {
         const found = res.cases.find((c: any) => c.caseId === selectId || c._id === selectId || c.paymentId === selectId);

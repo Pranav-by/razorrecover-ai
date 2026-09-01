@@ -224,7 +224,7 @@ export const Recoveries: React.FC = () => {
   const fetchCases = async () => {
     setLoading(true);
     try {
-      const params: any = { limit: 200 };
+      const params: any = { limit: 200, includeCatalog: 'true' };
       if (selectedScenario !== 'all') params.scenario = selectedScenario;
       if (selectedStatus !== 'all') params.status = selectedStatus;
       const [resCases, resTests] = await Promise.all([

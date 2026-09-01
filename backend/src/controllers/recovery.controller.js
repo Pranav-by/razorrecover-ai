@@ -10,74 +10,88 @@ class RecoveryController {
    */
   static async listAll(req, res, next) {
     try {
-      const { scenario, status, page = 1, limit = 200 } = req.query;
+      const { page = 1, limit = 20, scenario, status, includeCatalog } = req.query;
       const Transaction = require('../models/Transaction');
       const Customer = require('../models/Customer');
 
-      const filter = { scenario: { $ne: 'successful' } };
-      if (scenario && scenario !== 'all') filter.scenario = scenario;
+      const caseFilter = {};
+      if (status && status !== 'all') caseFilter.status = status;
+      if (scenario && scenario !== 'all') caseFilter.scenario = scenario;
 
-      const transactions = await Transaction.find(filter)
+      const existingCases = await RecoveryCase.find(caseFilter)
         .sort({ isCustomTest: -1, createdAt: -1, _id: -1 })
         .lean();
 
-      const existingCases = await RecoveryCase.find().lean();
-      const customers = await Customer.find().lean();
+      // If active recovery cases exist in database, return them
+      if (existingCases.length > 0) {
+        const customers = await Customer.find().lean();
+        const customerMap = {};
+        customers.forEach(c => { customerMap[c.customerId] = c; });
 
-      const caseMap = {};
-      existingCases.forEach(c => {
-        if (c.transactionId) caseMap[c.transactionId.toString()] = c;
-        if (c.caseId) caseMap[c.caseId] = c;
-      });
+        const enriched = existingCases.map(c => {
+          const cust = customerMap[c.customerId];
+          return {
+            ...c,
+            customerRiskLevel: c.customerRiskLevel || cust?.riskLevel || 'low',
+            optedOut: c.optedOut !== undefined ? c.optedOut : (cust?.optedOut || false),
+            hasDispute: c.hasDispute !== undefined ? c.hasDispute : (cust?.disputeHistory?.some(d => d.status === 'open') || false),
+          };
+        });
 
-      const customerMap = {};
-      customers.forEach(c => { customerMap[c.customerId] = c; });
+        const total = enriched.length;
+        const paginatedCases = enriched.slice((page - 1) * limit, page * limit);
+        return res.json({ cases: paginatedCases, total, page: Number(page), limit: Number(limit) });
+      }
 
-      const allEnrichedCases = transactions.map((t, idx) => {
-        const rCase = caseMap[t._id.toString()] || caseMap[t.paymentId];
-        const cust = customerMap[t.customerId];
+      // If no recovery cases exist (e.g. after clicking Reset):
+      // Only synthesize test catalog if explicitly requested by Test Lab or Customer Portal
+      if (includeCatalog === 'true') {
+        const txnFilter = { scenario: { $ne: 'successful' } };
+        if (scenario && scenario !== 'all') txnFilter.scenario = scenario;
 
-        let strategyAction = rCase?.recommendedAction;
-        if (!strategyAction) {
+        const transactions = await Transaction.find(txnFilter)
+          .sort({ isCustomTest: -1, createdAt: -1, _id: -1 })
+          .lean();
+
+        const customers = await Customer.find().lean();
+        const customerMap = {};
+        customers.forEach(c => { customerMap[c.customerId] = c; });
+
+        const catalogCases = transactions.map((t, idx) => {
+          const cust = customerMap[t.customerId];
+          let strategyAction = 'retry_payment';
           if (t.scenario === 'checkout_abandonment') strategyAction = 'generate_link';
           else if (t.scenario === 'subscription_failure' || t.failureReason === 'expired_card') strategyAction = 'update_method';
           else if (t.scenario === 'invoice_overdue') strategyAction = 'send_reminder';
-          else strategyAction = 'retry_payment';
-        }
 
-        const caseStatus = rCase?.status || 'DETECTED';
-        const caseId = rCase?.caseId || `RC_${String(idx + 1).padStart(4, '0')}`;
+          return {
+            _id: t._id,
+            caseId: `RC_${String(idx + 1).padStart(4, '0')}`,
+            paymentId: t.paymentId,
+            customerId: t.customerId,
+            customerName: t.customerName || cust?.name || 'Unknown',
+            customerRiskLevel: cust?.riskLevel || 'low',
+            optedOut: !!cust?.optedOut,
+            hasDispute: cust?.disputeHistory?.some(d => d.status === 'open') || false,
+            scenario: t.scenario,
+            amountAtRisk: t.amount,
+            recoveryProbability: t.failureReason === 'expired_card' ? 0.8 : 0.85,
+            expectedRecoveryValue: Math.round(t.amount * 0.85),
+            recommendedAction: strategyAction,
+            status: 'DETECTED',
+            recoveredAmount: 0,
+            attemptCount: t.attempts || 0,
+            isCustomTest: !!t.isCustomTest
+          };
+        });
 
-        return {
-          _id: rCase?._id || t._id,
-          caseId,
-          paymentId: t.paymentId,
-          customerId: t.customerId,
-          customerName: t.customerName || cust?.name || 'Unknown',
-          customerRiskLevel: cust?.riskLevel || 'low',
-          optedOut: !!cust?.optedOut,
-          hasDispute: cust?.disputeHistory?.some(d => d.status === 'open') || false,
-          scenario: t.scenario,
-          amountAtRisk: t.amount,
-          recoveryProbability: rCase?.recoveryProbability || (t.failureReason === 'expired_card' ? 0.8 : 0.85),
-          expectedRecoveryValue: rCase?.expectedRecoveryValue || Math.round(t.amount * 0.85),
-          recommendedAction: strategyAction,
-          status: caseStatus,
-          recoveredAmount: rCase?.recoveredAmount || 0,
-          attemptCount: rCase?.attemptCount || t.attempts || 0,
-          isCustomTest: !!t.isCustomTest || caseId.startsWith('RC_TEST_')
-        };
-      });
-
-      let finalCases = allEnrichedCases;
-      if (status && status !== 'all') {
-        finalCases = allEnrichedCases.filter(c => c.status === status);
+        const total = catalogCases.length;
+        const paginatedCases = catalogCases.slice((page - 1) * limit, page * limit);
+        return res.json({ cases: paginatedCases, total, page: Number(page), limit: Number(limit) });
       }
 
-      const total = finalCases.length;
-      const paginatedCases = finalCases.slice((page - 1) * limit, page * limit);
-
-      res.json({ cases: paginatedCases, total, page: Number(page), limit: Number(limit) });
+      // Default when reset / empty: return 0 cases
+      return res.json({ cases: [], total: 0, page: Number(page), limit: Number(limit) });
     } catch (err) { next(err); }
   }
 
@@ -630,7 +644,7 @@ class RecoveryController {
       }
 
       if (txn) {
-        txn.status = 'successful';
+        txn.status = 'success';
         await txn.save();
       }
 
