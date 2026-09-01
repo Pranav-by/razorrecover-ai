@@ -569,8 +569,24 @@ export const CustomerPortal: React.FC = () => {
                       ⚠️ Operator Review Required in Human Queue
                     </div>
                   </div>
+                ) : selectedCase.status === 'REJECTED' ? (
+                  /* State 4: Rejected by Guardrail / Human Reviewer */
+                  <div style={{ padding: '24px', borderRadius: '12px', border: '2px solid #fca5a5', backgroundColor: '#fef2f2', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', textAlign: 'center' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#dc2626' }}>
+                      <AlertTriangle size={28} />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '18px', color: '#7f1d1d' }}>Intervention Rejected by Policy Guardrail</div>
+                      <div style={{ fontSize: '13px', color: '#991b1b', marginTop: '4px', maxWidth: '380px' }}>
+                        This intervention was rejected by a compliance reviewer or financial safety policy. All payment links, retries, and dunning sequences have been cancelled and disabled.
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#b91c1c', fontWeight: 700, backgroundColor: '#ffffff', padding: '6px 14px', borderRadius: '8px', border: '1px solid #fecaca' }}>
+                      🚫 Outreach Blocked &amp; Cancelled
+                    </div>
+                  </div>
                 ) : selectedCase.status === 'PROMISE_LOGGED' ? (
-                  /* State 4: Promise-to-Pay Active */
+                  /* State 5: Promise-to-Pay Active */
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     <div style={{ padding: '18px', borderRadius: '12px', border: '2px solid #93c5fd', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', gap: '14px' }}>
                       <Clock size={24} color="#1d4ed8" />

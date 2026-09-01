@@ -24,8 +24,9 @@ export const CaseInspectModal: React.FC<CaseInspectModalProps> = ({ caseData, on
 
   const isUnprocessed = currentCase.status === 'UNPROCESSED' || (!currentCase.recommendedAction && currentCase.status !== 'RECOVERED');
   const isRecovered = currentCase.status === 'RECOVERED';
-  const isHumanReview = currentCase.status === 'HUMAN_REVIEW';
-  const isHalted = currentCase.status === 'HALTED';
+  const isHumanReview = currentCase.status === 'HUMAN_REVIEW' || currentCase.status === 'BLOCKED' || currentCase.status === 'PAUSED';
+  const isHalted = currentCase.status === 'HALTED' || currentCase.optedOut;
+  const isRejected = currentCase.status === 'REJECTED';
 
   const amountVal = currentCase.amountAtRisk || currentCase.amount || 0;
   const failureReason = currentCase.failureReason || currentCase.transactionId?.failureReason || 'gateway_timeout';
@@ -108,6 +109,35 @@ export const CaseInspectModal: React.FC<CaseInspectModalProps> = ({ caseData, on
           state: 'pending',
           title: 'Step 4: Razorpay Verification & Cryptographic Audit Seal',
           desc: 'Awaiting Verification — Will poll Razorpay API for settlement confirmation and seal immutable SHA-256 ledger.',
+        },
+      ];
+    }
+
+    if (isRejected) {
+      return [
+        {
+          step: 1,
+          state: 'passed',
+          title: 'Step 1: Revenue Leak Ingestion & Priority Score',
+          desc: `✓ Incident logged from stream. Initial risk evaluation performed.`,
+        },
+        {
+          step: 2,
+          state: 'halted',
+          title: 'Step 2: Compliance Guardrail Rejection',
+          desc: '❌ Guardrail Rejection: Human reviewer or policy engine vetoed automated outreach for this incident.',
+        },
+        {
+          step: 3,
+          state: 'disabled',
+          title: 'Step 3: Outreach & Payment Links Cancelled',
+          desc: 'All payment links, dunning sequences, and retry attempts have been revoked and blocked.',
+        },
+        {
+          step: 4,
+          state: 'disabled',
+          title: 'Step 4: Case Closed as Rejected',
+          desc: 'Case finalized in rejected state in MongoDB audit ledger.',
         },
       ];
     }

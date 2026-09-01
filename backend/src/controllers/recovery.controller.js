@@ -634,6 +634,10 @@ class RecoveryController {
       let rCase = await RecoveryCase.findOne({ $or: orClauses });
       let txn = await Transaction.findOne({ $or: orClauses });
 
+      if (rCase?.status === 'REJECTED') {
+        return res.status(400).json({ error: 'This case was rejected by compliance guardrails. Recovery outreach is cancelled.' });
+      }
+
       const amount = rCase?.amountAtRisk || txn?.amount || 5000;
       const now = new Date();
 
@@ -764,6 +768,10 @@ class RecoveryController {
 
       let rCase = await RecoveryCase.findOne({ $or: orClauses });
       let txn = await Transaction.findOne({ $or: orClauses });
+
+      if (rCase?.status === 'REJECTED') {
+        return res.status(400).json({ error: 'This case was rejected by compliance guardrails. Recovery outreach is cancelled.' });
+      }
 
       if (!rCase && txn) {
         const count = await RecoveryCase.countDocuments();
