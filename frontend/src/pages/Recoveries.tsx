@@ -841,22 +841,49 @@ export const Recoveries: React.FC = () => {
                       </div>
                     </td>
                     <td style={{ padding: '12px 14px' }} onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => handleExecuteSingleCase(item.caseId)}
-                        disabled={isRowExecuting}
-                        className="neo-btn neo-btn-sm"
-                        style={{ backgroundColor: '#c4f0c2', fontWeight: 800 }}
-                        title="Execute full 10-agent pipeline on this single case"
-                      >
-                        {isRowExecuting ? (
-                          <Sparkles size={14} className="animate-spin" />
-                        ) : (
-                          <>
-                            <Play size={12} fill="#121316" />
-                            <span>⚡ Run Single</span>
-                          </>
-                        )}
-                      </button>
+                      {item.status === 'UNPROCESSED' ? (
+                        <button
+                          onClick={() => handleExecuteSingleCase(item.caseId)}
+                          disabled={isRowExecuting}
+                          className="neo-btn neo-btn-sm"
+                          style={{ backgroundColor: '#c4f0c2', fontWeight: 800 }}
+                          title="Execute full 10-agent pipeline on this single case"
+                        >
+                          {isRowExecuting ? (
+                            <Sparkles size={14} className="animate-spin" />
+                          ) : (
+                            <>
+                              <Play size={12} fill="#121316" />
+                              <span>⚡ Run Single</span>
+                            </>
+                          )}
+                        </button>
+                      ) : item.status === 'RECOVERED' ? (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '8px', backgroundColor: '#dcfce7', color: '#15803d', fontWeight: 800, fontSize: '11px', border: '1.5px solid #86efac' }}>
+                          <span>✓ Recovered</span>
+                        </div>
+                      ) : item.status === 'HALTED' ? (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '8px', backgroundColor: '#fee2e2', color: '#b91c1c', fontWeight: 800, fontSize: '11px', border: '1.5px solid #fca5a5' }}>
+                          <span>🛑 Halted</span>
+                        </div>
+                      ) : item.status === 'HUMAN_REVIEW' ? (
+                        <Link
+                          to="/review"
+                          className="neo-btn neo-btn-sm"
+                          style={{ backgroundColor: '#fef08a', color: '#854d0e', fontWeight: 800, fontSize: '11px', textDecoration: 'none', padding: '4px 8px' }}
+                          title="View in Human Review Queue"
+                        >
+                          <span>👤 In Review</span>
+                        </Link>
+                      ) : item.status === 'PROMISE_LOGGED' ? (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '8px', backgroundColor: '#eff6ff', color: '#1d4ed8', fontWeight: 800, fontSize: '11px', border: '1.5px solid #bfdbfe' }}>
+                          <span>📅 Committed</span>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '8px', backgroundColor: '#f1f5f9', color: '#475569', fontWeight: 700, fontSize: '11px', border: '1.5px solid #cbd5e1' }}>
+                          <span>✓ Evaluated</span>
+                        </div>
+                      )}
                     </td>
                     <td style={{ padding: '12px 14px' }} onClick={(e) => e.stopPropagation()}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
