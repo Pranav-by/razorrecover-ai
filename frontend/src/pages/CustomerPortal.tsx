@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getRecoveries, createTestCase, customerPay, customerOptOut, customerPromise, customerDispute } from '../services/api';
 import { RecoveryCase } from '../types';
-import { ShoppingBag, CreditCard, RefreshCw, Send, CheckCircle2, AlertTriangle, ShieldCheck, Clock, UserX, MessageSquare, Sparkles, ArrowRight, ExternalLink, Calendar, Plus, Smartphone, Building, ShieldAlert, Check } from 'lucide-react';
+import { ShoppingBag, CreditCard, RefreshCw, Send, CheckCircle2, AlertTriangle, ShieldCheck, Clock, UserX, MessageSquare, Sparkles, ArrowRight, ExternalLink, Calendar, Plus, Smartphone, Building, ShieldAlert, Check, Search, Filter, Hash, User, DollarSign } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const SCENARIO_CONFIG: Record<string, {
@@ -85,6 +85,8 @@ export const CustomerPortal: React.FC = () => {
   const [cases, setCases] = useState<RecoveryCase[]>([]);
   const [selectedCase, setSelectedCase] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [scenarioFilter, setScenarioFilter] = useState('all');
 
   // Customer Action States
   const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null);
@@ -110,16 +112,22 @@ export const CustomerPortal: React.FC = () => {
   const [simSuccessPaid, setSimSuccessPaid] = useState<boolean>(false);
   const [isSimulating, setIsSimulating] = useState(false);
 
-  const fetchCases = async () => {
+  const fetchCases = async (selectId?: string) => {
     setLoading(true);
     try {
-      const res = await getRecoveries({ limit: 50 });
+      const res = await getRecoveries({ limit: 200 });
       setCases(res.cases);
-      if (res.cases.length > 0 && !selectedCase) {
+      if (selectId) {
+        const found = res.cases.find((c: any) => c.caseId === selectId || c._id === selectId || c.paymentId === selectId);
+        if (found) setSelectedCase(found);
+      } else if (!selectedCase && res.cases.length > 0) {
         setSelectedCase(res.cases[0]);
+      } else if (selectedCase) {
+        const updated = res.cases.find((c: any) => (c.caseId && c.caseId === selectedCase.caseId) || (c._id && c._id === selectedCase._id));
+        if (updated) setSelectedCase(updated);
       }
     } catch (err) {
-      console.error('Failed to load cases for customer portal:', err);
+      console.error('Failed to load dynamic cases for customer portal:', err);
     } finally {
       setLoading(false);
     }
@@ -144,10 +152,11 @@ export const CustomerPortal: React.FC = () => {
     setIsProcessingAction(true);
     try {
       const targetId = selectedCase._id || selectedCase.paymentId || selectedCase.caseId;
-      const res = await customerPay(targetId, selectedMethod);
-      setActionSuccessMessage(`🎉 Payment of ₹${selectedCase.amountAtRisk?.toLocaleString('en-IN') || selectedCase.amount} completed successfully! Transaction status updated to RECOVERED.`);
-      setSelectedCase((prev: any) => ({ ...prev, status: 'RECOVERED', recoveredAmount: prev.amountAtRisk }));
-      await fetchCases();
+      await customerPay(targetId, selectedMethod);
+      const amountVal = selectedCase.amountAtRisk || selectedCase.amount || 0;
+      setActionSuccessMessage(`🎉 Payment of ₹${amountVal.toLocaleString('en-IN')} successfully verified via Razorpay API! Transaction updated to RECOVERED in database.`);
+      setSelectedCase((prev: any) => ({ ...prev, status: 'RECOVERED', recoveredAmount: amountVal }));
+      await fetchCases(selectedCase.caseId);
     } catch (err) {
       console.error('Payment error:', err);
     } finally {
@@ -162,9 +171,9 @@ export const CustomerPortal: React.FC = () => {
     try {
       const targetId = selectedCase._id || selectedCase.paymentId || selectedCase.caseId;
       await customerOptOut(targetId);
-      setActionSuccessMessage('🛑 STOP-02 Activated: You have been opted out. All automated winback notifications are now permanently frozen.');
+      setActionSuccessMessage('🛑 STOP-02 Activated: Customer consent revoked. All recovery automation for this account is permanently HALTED in MongoDB.');
       setSelectedCase((prev: any) => ({ ...prev, status: 'HALTED', optedOut: true }));
-      await fetchCases();
+      await fetchCases(selectedCase.caseId);
     } catch (err) {
       console.error('Opt-out error:', err);
     } finally {
@@ -178,9 +187,9 @@ export const CustomerPortal: React.FC = () => {
     try {
       const targetId = selectedCase._id || selectedCase.paymentId || selectedCase.caseId;
       await customerPromise(targetId, promisedDateInput);
-      setActionSuccessMessage(`📅 Promise-to-Pay registered for ${promisedDateInput}. Automated reminders are paused until the promised date.`);
+      setActionSuccessMessage(`📅 Promise-to-Pay registered for ${promisedDateInput}. Automated follow-up paused until commitment date.`);
       setSelectedCase((prev: any) => ({ ...prev, status: 'PROMISE_LOGGED' }));
-      await fetchCases();
+      await fetchCases(selectedCase.caseId);
     } catch (err) {
       console.error('Promise error:', err);
     } finally {
@@ -194,9 +203,9 @@ export const CustomerPortal: React.FC = () => {
     try {
       const targetId = selectedCase._id || selectedCase.paymentId || selectedCase.caseId;
       await customerDispute(targetId, disputeReasonInput);
-      setActionSuccessMessage('⚠️ STOP-03 Activated: Billing dispute registered. Outreach halted and transaction routed to human support.');
+      setActionSuccessMessage('⚠️ STOP-03 Activated: Dispute logged. Outreach suspended immediately and case routed to Human Review Queue.');
       setSelectedCase((prev: any) => ({ ...prev, status: 'HUMAN_REVIEW', hasDispute: true }));
-      await fetchCases();
+      await fetchCases(selectedCase.caseId);
     } catch (err) {
       console.error('Dispute error:', err);
     } finally {
@@ -211,8 +220,9 @@ export const CustomerPortal: React.FC = () => {
     setSimCreatedCase(null);
     try {
       const res = await createTestCase(simData);
-      setSimCreatedCase(res.recoveryCase || res.transaction);
-      await fetchCases();
+      const createdObj = res.recoveryCase || res.transaction;
+      setSimCreatedCase(createdObj);
+      await fetchCases(createdObj.caseId);
     } catch (err) {
       console.error('Simulation error:', err);
     } finally {
@@ -226,6 +236,15 @@ export const CustomerPortal: React.FC = () => {
   };
 
   const currentCfg = SCENARIO_CONFIG[simData.scenario] || SCENARIO_CONFIG.payment_failure;
+
+  const filteredCases = cases.filter((c: any) => {
+    const matchSearch =
+      c.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.caseId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.customerId?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchScenario = scenarioFilter === 'all' || c.scenario === scenarioFilter;
+    return matchSearch && matchScenario;
+  });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '16px 24px 80px 24px' }}>
@@ -247,19 +266,19 @@ export const CustomerPortal: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div className="neo-badge neo-badge-blue">
               <Smartphone size={13} />
-              <span>Customer-Facing Experience</span>
+              <span>Customer Action Portal</span>
             </div>
             <div className="neo-badge neo-badge-green">
-              <span>Real-Time Two-Way Interaction</span>
+              <span>{cases.length} Dynamic Live Cases</span>
             </div>
           </div>
 
           <h1 style={{ fontSize: '28px', lineHeight: 1.2, margin: '4px 0 0 0' }}>
-            Customer Action Portal & Live Checkout Simulator
+            Customer Action Hub & Real-Time Checkout Sandbox
           </h1>
 
           <p style={{ fontSize: '14px', color: '#475569', fontWeight: 500, margin: 0 }}>
-            Interact with automated agent winback outreach from the customer’s perspective (complete payment, update cards, commit promise dates, opt out) OR simulate checkout drops as a live shopper to watch RazorRecover AI detect and recover leaks in real-time.
+            100% dynamic customer-facing portal linked directly to your tested database cases. Experience two-way interactive actions (pay, switch payment method, promise dates, opt-out) or simulate live merchant checkouts.
           </p>
         </div>
 
@@ -287,18 +306,52 @@ export const CustomerPortal: React.FC = () => {
 
       {/* ─── TAB 1: Customer Outreach & Action Hub ─── */}
       {activeTab === 'outreach' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 400px) 1fr', gap: '24px' }}>
           {/* Left Column: Select Case / Customer Stream */}
           <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h3 style={{ fontSize: '18px', margin: 0 }}>Select Active Customer Outreach</h3>
-                <span style={{ fontSize: '12px', color: '#64748b' }}>Pick a transaction to simulate the customer receiving agent messages</span>
+                <h3 style={{ fontSize: '18px', margin: 0 }}>Live Customer Incidents ({filteredCases.length})</h3>
+                <span style={{ fontSize: '12px', color: '#64748b' }}>Select any tested customer to open their live interactive sheet</span>
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '520px', overflowY: 'auto', paddingRight: '4px' }}>
-              {cases.map((c: any) => {
+            {/* Search & Filter Bar */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ position: 'relative', width: '100%' }}>
+                <Search size={14} style={{ position: 'absolute', left: '10px', top: '12px', color: '#64748b' }} />
+                <input
+                  type="text"
+                  placeholder="Search customer, ID..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="neo-input"
+                  style={{ paddingLeft: '32px', height: '36px', fontSize: '12px', width: '100%' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
+                {[
+                  { key: 'all', label: 'All' },
+                  { key: 'payment_failure', label: 'Payments' },
+                  { key: 'checkout_abandonment', label: 'Carts' },
+                  { key: 'subscription_failure', label: 'Subscriptions' },
+                  { key: 'invoice_overdue', label: 'B2B Invoices' },
+                ].map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setScenarioFilter(f.key)}
+                    className={`neo-btn neo-btn-sm ${scenarioFilter === f.key ? 'neo-btn-primary' : 'neo-btn-white'}`}
+                    style={{ fontSize: '11px', padding: '4px 8px', whiteSpace: 'nowrap' }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '560px', overflowY: 'auto', paddingRight: '4px' }}>
+              {filteredCases.map((c: any) => {
                 const isSelected = selectedCase?.caseId === c.caseId || selectedCase?._id === c._id;
                 let badgeClass = 'neo-badge-blue';
                 if (c.status === 'RECOVERED') badgeClass = 'neo-badge-green';
@@ -313,7 +366,7 @@ export const CustomerPortal: React.FC = () => {
                       setActionSuccessMessage(null);
                     }}
                     style={{
-                      padding: '14px 16px',
+                      padding: '12px 14px',
                       borderRadius: '12px',
                       border: isSelected ? '2.5px solid #0284c7' : '1.5px solid var(--border-black)',
                       backgroundColor: isSelected ? '#e0f2fe' : '#ffffff',
@@ -326,14 +379,14 @@ export const CustomerPortal: React.FC = () => {
                     }}
                   >
                     <div>
-                      <div style={{ fontWeight: 800, fontSize: '14px', color: '#121316' }}>{c.customerName}</div>
+                      <div style={{ fontWeight: 800, fontSize: '13px', color: '#121316' }}>{c.customerName}</div>
                       <div style={{ fontSize: '11px', color: '#64748b' }}>
                         {c.caseId} • {c.scenario?.replace(/_/g, ' ').toUpperCase()}
                       </div>
                     </div>
 
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '15px' }}>
+                      <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '14px' }}>
                         ₹{(c.amountAtRisk || c.amount || 0).toLocaleString('en-IN')}
                       </div>
                       <div className={`neo-badge ${badgeClass}`} style={{ fontSize: '9px', padding: '1px 6px' }}>
@@ -348,32 +401,35 @@ export const CustomerPortal: React.FC = () => {
 
           {/* Right Column: Customer Interactive Mobile/Web Sheet */}
           {selectedCase && (
-            <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px', backgroundColor: '#ffffff' }}>
+            <div className="neo-card" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px', backgroundColor: '#ffffff' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid var(--border-black)', paddingBottom: '16px' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                    <span className="neo-badge neo-badge-blue" style={{ fontSize: '10px' }}>
+                    <span className="neo-badge neo-badge-blue" style={{ fontSize: '11px' }}>
                       {selectedCase.caseId}
                     </span>
-                    <span className={`neo-badge ${selectedCase.status === 'RECOVERED' ? 'neo-badge-green' : selectedCase.status === 'HUMAN_REVIEW' ? 'neo-badge-yellow' : 'neo-badge-coral'}`} style={{ fontSize: '10px' }}>
+                    <span className={`neo-badge ${selectedCase.status === 'RECOVERED' ? 'neo-badge-green' : selectedCase.status === 'HUMAN_REVIEW' ? 'neo-badge-yellow' : 'neo-badge-coral'}`} style={{ fontSize: '11px' }}>
                       {selectedCase.status}
                     </span>
+                    <span className="neo-badge" style={{ fontSize: '11px' }}>
+                      {selectedCase.scenario?.replace(/_/g, ' ').toUpperCase()}
+                    </span>
                   </div>
-                  <h2 style={{ fontSize: '20px', margin: 0 }}>Razorpay Customer Recovery Sheet</h2>
+                  <h2 style={{ fontSize: '24px', margin: '4px 0 0 0' }}>{selectedCase.customerName}</h2>
                   <span style={{ fontSize: '12px', color: '#64748b' }}>
-                    Recipient: <strong>{selectedCase.customerName}</strong> ({selectedCase.customerId || 'CUS_999'})
+                    Customer ID: <strong>{selectedCase.customerId || 'CUS_999'}</strong> • Risk: {selectedCase.customerRiskLevel || 'Low'} • Attempts: {selectedCase.attemptCount || 0}/2
                   </span>
                 </div>
 
                 <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, display: 'block' }}>TOTAL PAYABLE</span>
-                  <span style={{ fontSize: '24px', fontWeight: 900, fontFamily: 'var(--font-heading)', color: '#121316' }}>
+                  <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, display: 'block' }}>TOTAL AMOUNT DUE</span>
+                  <span style={{ fontSize: '28px', fontWeight: 900, fontFamily: 'var(--font-heading)', color: '#121316' }}>
                     ₹{(selectedCase.amountAtRisk || selectedCase.amount || 0).toLocaleString('en-IN')}
                   </span>
                 </div>
               </div>
 
-              {/* Simulated Agent Notification Box */}
+              {/* Dynamic Notification Context Box */}
               <div
                 style={{
                   padding: '16px',
@@ -387,16 +443,16 @@ export const CustomerPortal: React.FC = () => {
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#16a34a', fontWeight: 800, fontSize: '12px' }}>
                   <MessageSquare size={14} />
-                  <span>Agent Recovery Message (Received by Customer):</span>
+                  <span>Live Autonomous Winback Notification Dispatched to {selectedCase.customerName}:</span>
                 </div>
                 <div style={{ fontSize: '13px', color: '#1e293b', fontStyle: 'italic', lineHeight: 1.4 }}>
                   {selectedCase.scenario === 'subscription_failure'
-                    ? `Hi ${selectedCase.customerName}, your subscription auto-debit of ₹${(selectedCase.amountAtRisk || 299).toLocaleString('en-IN')} could not be processed due to card token expiration. A 7-day grace period is active. Please update your payment method to avoid service interruption.`
+                    ? `Hi ${selectedCase.customerName}, your recurring subscription charge of ₹${(selectedCase.amountAtRisk || 299).toLocaleString('en-IN')} failed due to card token expiration. A non-disruptive 7-day grace period is active. Please update your mandate details below to maintain active service.`
                     : selectedCase.scenario === 'checkout_abandonment'
-                    ? `Hi ${selectedCase.customerName}, we noticed you left items in your cart! Complete your order within 24 hours with your saved items via our fast 1-click Razorpay checkout link.`
+                    ? `Hi ${selectedCase.customerName}, we noticed you left items in your shopping cart! We saved your items for 24 hours. Click below to complete your checkout with 1-click Razorpay checkout.`
                     : selectedCase.scenario === 'invoice_overdue'
-                    ? `Dear Finance Team at ${selectedCase.customerName}, Invoice #${selectedCase.caseId} for ₹${(selectedCase.amountAtRisk || 250000).toLocaleString('en-IN')} is due. Please confirm your planned payout date or pay instantly.`
-                    : `Hi ${selectedCase.customerName}, your recent payment of ₹${(selectedCase.amountAtRisk || 5000).toLocaleString('en-IN')} experienced a temporary bank timeout. Click below to retry seamlessly.`}
+                    ? `Dear Accounts Team at ${selectedCase.customerName}, Commercial Invoice #${selectedCase.caseId} for ₹${(selectedCase.amountAtRisk || 250000).toLocaleString('en-IN')} is overdue. Please select your planned payout date or pay directly via virtual account.`
+                    : `Hi ${selectedCase.customerName}, your transaction of ₹${(selectedCase.amountAtRisk || 5000).toLocaleString('en-IN')} experienced a temporary gateway network timeout. Click below to retry seamlessly.`}
                 </div>
               </div>
 
@@ -407,28 +463,35 @@ export const CustomerPortal: React.FC = () => {
                 </div>
               )}
 
-              {/* Interactive Customer Action Form */}
+              {/* Dynamic Interactive Customer Options */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <span style={{ fontSize: '12px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#64748b' }}>
-                  CHOOSE YOUR ACTION AS THE CUSTOMER:
+                  INTERACTIVE TWO-WAY CUSTOMER ACTIONS:
                 </span>
 
-                {/* Option 1: Pay / Retry Now */}
+                {/* Option 1: Scenario-Specific Payment / Retry Execution */}
                 <div style={{ padding: '16px', borderRadius: '12px', border: '2px solid var(--border-black)', backgroundColor: '#fffdfa', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontWeight: 800, fontSize: '14px' }}>Option A: Pay Now / Complete Retry</div>
+                    <div style={{ fontWeight: 800, fontSize: '14px' }}>
+                      {selectedCase.scenario === 'subscription_failure'
+                        ? '💳 Update Card Mandate & Re-Authorize'
+                        : selectedCase.scenario === 'invoice_overdue'
+                        ? '🏢 Clear Commercial Invoice (NEFT / Virtual Account)'
+                        : '⚡ 1-Click Pay / Complete Payment Retry'}
+                    </div>
                     <span className="neo-badge neo-badge-green" style={{ fontSize: '10px' }}>Instant Settlement</span>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                     <select
                       value={selectedMethod}
                       onChange={(e) => setSelectedMethod(e.target.value)}
-                      style={{ padding: '8px 12px', borderRadius: '8px', border: '2px solid var(--border-black)', fontWeight: 700, fontSize: '12px', flex: 1 }}
+                      style={{ padding: '8px 12px', borderRadius: '8px', border: '2px solid var(--border-black)', fontWeight: 700, fontSize: '12px', flex: 1, minWidth: '180px' }}
                     >
                       <option value="upi">UPI (GPay / PhonePe / Paytm)</option>
                       <option value="card">Credit / Debit Card</option>
-                      <option value="netbanking">Netbanking</option>
+                      <option value="netbanking">Netbanking (HDFC, ICICI, SBI)</option>
+                      {selectedCase.scenario === 'invoice_overdue' && <option value="bank_transfer">NEFT / RTGS Virtual Account</option>}
                     </select>
 
                     <button
@@ -437,24 +500,24 @@ export const CustomerPortal: React.FC = () => {
                       className="neo-btn neo-btn-primary"
                       style={{ fontWeight: 800 }}
                     >
-                      {isProcessingAction ? 'Processing...' : selectedCase.status === 'RECOVERED' ? '✓ Paid' : '💳 Complete Payment'}
+                      {isProcessingAction ? 'Processing...' : selectedCase.status === 'RECOVERED' ? '✓ Settlement Verified' : `💳 Pay ₹${(selectedCase.amountAtRisk || 0).toLocaleString('en-IN')}`}
                     </button>
                   </div>
                 </div>
 
-                {/* Option 2: Promise to Pay (For B2B / Subscriptions) */}
+                {/* Option 2: Promise to Pay Date Registration */}
                 <div style={{ padding: '16px', borderRadius: '12px', border: '2px solid var(--border-black)', backgroundColor: '#fffdfa', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontWeight: 800, fontSize: '14px' }}>Option B: Commit to a Promise-to-Pay Date</div>
-                    <span className="neo-badge neo-badge-blue" style={{ fontSize: '10px' }}>Pause Dunning</span>
+                    <div style={{ fontWeight: 800, fontSize: '14px' }}>📅 Register Promise-to-Pay Date (Pause Dunning)</div>
+                    <span className="neo-badge neo-badge-blue" style={{ fontSize: '10px' }}>Holds Escalations</span>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                     <input
                       type="date"
                       value={promisedDateInput}
                       onChange={(e) => setPromisedDateInput(e.target.value)}
-                      style={{ padding: '8px 12px', borderRadius: '8px', border: '2px solid var(--border-black)', fontWeight: 700, fontSize: '12px', flex: 1 }}
+                      style={{ padding: '8px 12px', borderRadius: '8px', border: '2px solid var(--border-black)', fontWeight: 700, fontSize: '12px', flex: 1, minWidth: '180px' }}
                     />
 
                     <button
@@ -464,45 +527,45 @@ export const CustomerPortal: React.FC = () => {
                       style={{ fontWeight: 800 }}
                     >
                       <Calendar size={14} />
-                      <span>Register Promise</span>
+                      <span>Submit Commitment Date</span>
                     </button>
                   </div>
                 </div>
 
-                {/* Compliance & Safety Actions: Opt Out (STOP-02) and Dispute (STOP-03) */}
+                {/* Option 3: Compliance & Stopping Rules (STOP-02 Opt Out and STOP-03 Dispute) */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <button
                     onClick={handleCustomerOptOut}
-                    disabled={isProcessingAction || selectedCase.status === 'HALTED'}
+                    disabled={isProcessingAction || selectedCase.status === 'HALTED' || selectedCase.optedOut}
                     className="neo-btn neo-btn-coral"
                     style={{ fontSize: '12px', justifyContent: 'center' }}
                     title="Triggers STOP-02 policy rule: customer consent revoked"
                   >
                     <UserX size={14} />
-                    <span>🛑 Opt-Out (STOP-02)</span>
+                    <span>{selectedCase.optedOut ? '🛑 Opted Out (STOP-02)' : '🛑 Opt-Out (STOP-02)'}</span>
                   </button>
 
                   <button
                     onClick={handleCustomerDispute}
-                    disabled={isProcessingAction}
+                    disabled={isProcessingAction || selectedCase.hasDispute}
                     className="neo-btn neo-btn-white"
                     style={{ fontSize: '12px', justifyContent: 'center', backgroundColor: '#fff7d6' }}
                     title="Triggers STOP-03 policy rule: dispute routed to human review"
                   >
                     <AlertTriangle size={14} color="#b45309" />
-                    <span>⚠️ File Dispute (STOP-03)</span>
+                    <span>{selectedCase.hasDispute ? '⚠️ In Review (STOP-03)' : '⚠️ Report Dispute (STOP-03)'}</span>
                   </button>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', borderTop: '1px solid #e2e8f0', paddingTop: '14px' }}>
                 <Link to={`/recoveries/${selectedCase.caseId}`} className="neo-btn neo-btn-sm neo-btn-white" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span>Inspect Case in Dashboard</span>
+                  <span>Inspect Audit in Engine</span>
                   <ExternalLink size={12} />
                 </Link>
 
                 <span style={{ fontSize: '11px', color: '#64748b' }}>
-                  🔒 256-Bit Encrypted Razorpay Checkout
+                  🔒 100% Real-Time MongoDB Synced
                 </span>
               </div>
             </div>
@@ -519,7 +582,7 @@ export const CustomerPortal: React.FC = () => {
               <ShoppingBag size={20} color="#0284c7" />
               <div>
                 <h3 style={{ fontSize: '18px', margin: 0 }}>RazorFlow Merchant Checkout</h3>
-                <span style={{ fontSize: '12px', color: '#64748b' }}>Simulate a shopper checking out on a live e-commerce / SaaS store</span>
+                <span style={{ fontSize: '12px', color: '#64748b' }}>Simulate a real shopper checking out on a live e-commerce store</span>
               </div>
             </div>
 
