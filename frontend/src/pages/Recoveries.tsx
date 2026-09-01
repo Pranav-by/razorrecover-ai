@@ -865,6 +865,15 @@ export const Recoveries: React.FC = () => {
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '8px', backgroundColor: '#dcfce7', color: '#15803d', fontWeight: 800, fontSize: '11px', border: '1.5px solid #86efac' }}>
                           <span>✓ Recovered</span>
                         </div>
+                      ) : item.status === 'AWAITING_CUSTOMER' ? (
+                        <Link
+                          to="/customer-portal"
+                          className="neo-btn neo-btn-sm"
+                          style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', fontWeight: 800, fontSize: '11px', textDecoration: 'none', padding: '4px 8px' }}
+                          title="Action dispatched to customer — view in Customer Portal"
+                        >
+                          <span>📱 In Portal</span>
+                        </Link>
                       ) : item.status === 'HALTED' ? (
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '8px', backgroundColor: '#fee2e2', color: '#b91c1c', fontWeight: 800, fontSize: '11px', border: '1.5px solid #fca5a5' }}>
                           <span>🛑 Halted</span>

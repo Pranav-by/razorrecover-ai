@@ -45,6 +45,7 @@ export interface RecoveryCase {
     | 'APPROVED'
     | 'EXECUTING'
     | 'VERIFYING'
+    | 'AWAITING_CUSTOMER'
     | 'RECOVERED'
     | 'PARTIALLY_RECOVERED'
     | 'FAILED'

@@ -53,40 +53,19 @@ class VerificationService {
         message: `Promise to pay received — expected: ${recoveryCase.promiseToPayDate.toDateString()}`,
         metadata: { promiseDate: recoveryCase.promiseToPayDate }
       });
-    } else if (actionResult.result === 'link_generated') {
-      // Payment link generated — recovery pending customer action
-      finalStatus = 'VERIFYING';
-      // Simulate: some links convert (based on probability)
-      const converts = Math.random() < recoveryCase.recoveryProbability;
-      if (converts) {
-        verified = true;
-        finalStatus = 'RECOVERED';
-        recoveredAmount = recoveryCase.amountAtRisk;
-      }
+    } else if (actionResult.success || actionResult.result === 'link_generated') {
+      // Action successfully dispatched to customer — awaiting customer action in Customer Portal
+      verified = false;
+      finalStatus = 'AWAITING_CUSTOMER';
+      recoveredAmount = 0;
 
       await AuditService.log({
         recoveryCaseId: recoveryCase._id,
         batchId,
-        event: converts ? 'recovery_verified' : 'recovery_failed',
+        event: 'action_executed',
         actor: 'verification',
-        message: converts
-          ? `✓ Payment link converted — ₹${recoveredAmount} recovered`
-          : 'Payment link sent — awaiting customer action',
-        metadata: { linkConverted: converts }
-      });
-    } else if (actionResult.success) {
-      // Direct success
-      verified = true;
-      finalStatus = 'RECOVERED';
-      recoveredAmount = recoveryCase.amountAtRisk;
-
-      await AuditService.log({
-        recoveryCaseId: recoveryCase._id,
-        batchId,
-        event: 'recovery_verified',
-        actor: 'verification',
-        message: `✓ Recovery verified — ₹${recoveredAmount} recovered`,
-        metadata: { recoveredAmount }
+        message: `Action dispatched via Razorpay API — awaiting customer settlement on Customer Portal`,
+        metadata: { action: recoveryCase.recommendedAction }
       });
     } else {
       // Failed
