@@ -414,12 +414,25 @@ class RecoveryController {
 
       if (!recoveryCase) {
         // Also try paymentId matching on transaction
-        const txn = await Transaction.findOne({
+        let txn = await Transaction.findOne({
           $or: [
             ...(isValidObjectId ? [{ _id: targetId }] : []),
             { paymentId: targetId }
           ]
         });
+
+        // If targetId is formatted as RC_0001, look up by catalog position
+        if (!txn && targetId && targetId.startsWith('RC_')) {
+          const num = parseInt(targetId.replace('RC_', '').replace('TEST_', ''), 10);
+          if (!isNaN(num) && num > 0) {
+            const allTxns = await Transaction.find({ scenario: { $ne: 'successful' } })
+              .sort({ isCustomTest: -1, createdAt: -1, _id: -1 })
+              .lean();
+            if (allTxns[num - 1]) {
+              txn = await Transaction.findById(allTxns[num - 1]._id);
+            }
+          }
+        }
 
         if (!txn) return res.status(404).json({ error: 'Test case transaction not found' });
 
@@ -427,10 +440,10 @@ class RecoveryController {
         if (!recoveryCase) {
           const caseCount = await RecoveryCase.countDocuments();
           recoveryCase = await RecoveryCase.create({
-            caseId: `RC_TEST_${String(caseCount + 1).padStart(4, '0')}`,
+            caseId: targetId.startsWith('RC_') ? targetId : `RC_${String(caseCount + 1).padStart(4, '0')}`,
             transactionId: txn._id,
             customerId: txn.customerId,
-            customerName: txn.customerName,
+            customerName: txn.customerName || 'Customer',
             scenario: txn.scenario,
             amountAtRisk: txn.amount,
             recoveryProbability: 0.85,

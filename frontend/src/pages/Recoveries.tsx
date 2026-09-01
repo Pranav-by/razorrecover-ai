@@ -843,14 +843,17 @@ export const Recoveries: React.FC = () => {
                     <td style={{ padding: '12px 14px' }} onClick={(e) => e.stopPropagation()}>
                       {item.status === 'UNPROCESSED' ? (
                         <button
-                          onClick={() => handleExecuteSingleCase(item.caseId)}
-                          disabled={isRowExecuting}
+                          onClick={() => handleExecuteSingleCase(item.caseId || (item as any)._id)}
+                          disabled={isRowExecuting || executingCaseId !== null}
                           className="neo-btn neo-btn-sm"
-                          style={{ backgroundColor: '#c4f0c2', fontWeight: 800 }}
+                          style={{ backgroundColor: isRowExecuting ? '#fde047' : '#c4f0c2', fontWeight: 800, minWidth: '100px', justifyContent: 'center' }}
                           title="Execute full 10-agent pipeline on this single case"
                         >
                           {isRowExecuting ? (
-                            <Sparkles size={14} className="animate-spin" />
+                            <>
+                              <Sparkles size={14} className="animate-spin" />
+                              <span>Running...</span>
+                            </>
                           ) : (
                             <>
                               <Play size={12} fill="#121316" />
