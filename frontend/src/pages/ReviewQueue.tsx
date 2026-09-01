@@ -3,9 +3,11 @@ import { RecoveryCase } from '../types';
 import { getReviewQueue, approveReviewCase, rejectReviewCase } from '../services/api';
 import { UserCheck, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { CaseInspectModal } from '../components/CaseInspectModal';
 
 export const ReviewQueue: React.FC = () => {
   const [queueCases, setQueueCases] = useState<RecoveryCase[]>([]);
+  const [inspectingCase, setInspectingCase] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fetchQueue = async () => {
@@ -151,7 +153,15 @@ export const ReviewQueue: React.FC = () => {
               </div>
 
               {/* Action Buttons */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  onClick={() => setInspectingCase(item)}
+                  className="neo-btn neo-btn-white neo-btn-sm"
+                  style={{ fontWeight: 800 }}
+                  title="Inspect full case telemetry"
+                >
+                  ⚡ Inspect
+                </button>
                 <button onClick={() => handleReject(item.caseId)} className="neo-btn neo-btn-coral neo-btn-sm">
                   Reject Action
                 </button>
@@ -162,6 +172,15 @@ export const ReviewQueue: React.FC = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {/* ─── Global Reusable Quick-Inspect Modal ─── */}
+      {inspectingCase && (
+        <CaseInspectModal
+          caseData={inspectingCase}
+          onClose={() => setInspectingCase(null)}
+          onUpdate={() => fetchQueue()}
+        />
       )}
     </div>
   );

@@ -3,6 +3,7 @@ import { getRecoveries, createTestCase, customerPay, customerOptOut, customerPro
 import { RecoveryCase } from '../types';
 import { ShoppingBag, CreditCard, RefreshCw, Send, CheckCircle2, AlertTriangle, ShieldCheck, Clock, UserX, MessageSquare, Sparkles, ArrowRight, ExternalLink, Calendar, Plus, Smartphone, Building, ShieldAlert, Check, Search, Filter, Hash, User, DollarSign } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { CaseInspectModal } from '../components/CaseInspectModal';
 
 const SCENARIO_CONFIG: Record<string, {
   label: string;
@@ -87,6 +88,7 @@ export const CustomerPortal: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [scenarioFilter, setScenarioFilter] = useState('all');
+  const [inspectingModalCase, setInspectingModalCase] = useState<any | null>(null);
 
   // Customer Action States
   const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null);
@@ -601,10 +603,14 @@ export const CustomerPortal: React.FC = () => {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', borderTop: '1px solid #e2e8f0', paddingTop: '14px' }}>
-                <Link to={`/recoveries/${selectedCase.caseId}`} className="neo-btn neo-btn-sm neo-btn-white" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span>Inspect Audit in Engine</span>
+                <button
+                  onClick={() => setInspectingModalCase(selectedCase)}
+                  className="neo-btn neo-btn-sm neo-btn-white"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 800 }}
+                >
+                  <span>⚡ Quick Inspect Audit</span>
                   <ExternalLink size={12} />
-                </Link>
+                </button>
 
                 <span style={{ fontSize: '11px', color: '#64748b' }}>
                   🔒 100% Real-Time MongoDB Synced
@@ -631,6 +637,15 @@ export const CustomerPortal: React.FC = () => {
             </div>
           )}
         </div>
+      )}
+
+      {/* ─── Global Reusable Quick-Inspect Modal ─── */}
+      {inspectingModalCase && (
+        <CaseInspectModal
+          caseData={inspectingModalCase}
+          onClose={() => setInspectingModalCase(null)}
+          onUpdate={() => fetchCases(inspectingModalCase.caseId)}
+        />
       )}
 
       {/* ─── TAB 2: Live Checkout Simulator (Create New Leaks in Real-Time) ─── */}
