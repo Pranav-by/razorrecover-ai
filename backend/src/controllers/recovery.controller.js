@@ -59,10 +59,6 @@ class RecoveryController {
 
         const catalogCases = transactions.map((t, idx) => {
           const cust = customerMap[t.customerId];
-          let strategyAction = 'retry_payment';
-          if (t.scenario === 'checkout_abandonment') strategyAction = 'generate_link';
-          else if (t.scenario === 'subscription_failure' || t.failureReason === 'expired_card') strategyAction = 'update_method';
-          else if (t.scenario === 'invoice_overdue') strategyAction = 'send_reminder';
 
           return {
             _id: t._id,
@@ -75,10 +71,10 @@ class RecoveryController {
             hasDispute: cust?.disputeHistory?.some(d => d.status === 'open') || false,
             scenario: t.scenario,
             amountAtRisk: t.amount,
-            recoveryProbability: t.failureReason === 'expired_card' ? 0.8 : 0.85,
-            expectedRecoveryValue: Math.round(t.amount * 0.85),
-            recommendedAction: strategyAction,
-            status: 'DETECTED',
+            recoveryProbability: null,
+            expectedRecoveryValue: null,
+            recommendedAction: null,
+            status: 'UNPROCESSED',
             recoveredAmount: 0,
             attemptCount: t.attempts || 0,
             isCustomTest: !!t.isCustomTest

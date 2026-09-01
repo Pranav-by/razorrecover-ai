@@ -33,6 +33,7 @@ export interface RecoveryCase {
   };
   recommendedAction?: 'retry_payment' | 'generate_link' | 'send_reminder' | 'update_method' | 'escalate_human' | 'stop_recovery';
   status:
+    | 'UNPROCESSED'
     | 'DETECTED'
     | 'DIAGNOSING'
     | 'STRATEGY_SELECTED'
@@ -50,6 +51,7 @@ export interface RecoveryCase {
     | 'UNKNOWN_STATE'
     | 'HUMAN_REVIEW'
     | 'REJECTED'
+    | 'PROMISE_LOGGED'
     | 'UNRECOVERABLE';
   stoppingRule?: string | null;
   policyDecision?: {

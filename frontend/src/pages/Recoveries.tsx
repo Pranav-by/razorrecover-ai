@@ -719,6 +719,7 @@ export const Recoveries: React.FC = () => {
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {[
               { key: 'all', label: 'All Statuses' },
+              { key: 'UNPROCESSED', label: 'Unprocessed' },
               { key: 'DETECTED', label: 'Detected' },
               { key: 'RECOVERED', label: 'Recovered' },
               { key: 'HUMAN_REVIEW', label: 'Review Queue' },
@@ -757,18 +758,11 @@ export const Recoveries: React.FC = () => {
                 if (item.status === 'RECOVERED') badgeClass = 'neo-badge-green';
                 else if (item.status === 'BLOCKED' || item.status === 'HALTED' || item.status === 'FAILED') badgeClass = 'neo-badge-coral';
                 else if (item.status === 'HUMAN_REVIEW' || item.status === 'PAUSED') badgeClass = 'neo-badge-yellow';
+                else if (item.status === 'UNPROCESSED') badgeClass = 'neo-badge';
 
                 const isRowExecuting = executingCaseId === item.caseId || executingCaseId === (item as any)._id;
 
-                const strategy = item.recommendedAction
-                  ? item.recommendedAction.replace(/_/g, ' ')
-                  : item.scenario === 'payment_failure'
-                  ? 'retry payment'
-                  : item.scenario === 'checkout_abandonment'
-                  ? 'generate link'
-                  : item.scenario === 'subscription_failure'
-                  ? 'update method'
-                  : 'send reminder';
+                const hasExecuted = !!item.recommendedAction && item.status !== 'UNPROCESSED';
 
                 return (
                   <tr
@@ -818,17 +812,27 @@ export const Recoveries: React.FC = () => {
                       ₹{item.amountAtRisk.toLocaleString('en-IN')}
                     </td>
                     <td style={{ padding: '12px 14px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontWeight: 800, color: '#2563eb', fontFamily: 'var(--font-heading)' }}>
-                          {Math.round((item.recoveryProbability || 0) * 100)}%
-                        </span>
-                        <span style={{ fontSize: '10px', color: '#64748b' }}>EV: ₹{item.expectedRecoveryValue || 0}</span>
-                      </div>
+                      {hasExecuted && item.recoveryProbability !== null && item.recoveryProbability !== undefined ? (
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontWeight: 800, color: '#2563eb', fontFamily: 'var(--font-heading)' }}>
+                            {Math.round(item.recoveryProbability * 100)}%
+                          </span>
+                          <span style={{ fontSize: '10px', color: '#64748b' }}>EV: ₹{item.expectedRecoveryValue || 0}</span>
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>Pending Run</span>
+                      )}
                     </td>
                     <td style={{ padding: '12px 14px' }}>
-                      <div className="neo-badge neo-badge-yellow" style={{ fontSize: '10px', padding: '2px 8px', textTransform: 'uppercase' }}>
-                        {strategy}
-                      </div>
+                      {hasExecuted ? (
+                        <div className="neo-badge neo-badge-yellow" style={{ fontSize: '10px', padding: '2px 8px', textTransform: 'uppercase' }}>
+                          {item.recommendedAction?.replace(/_/g, ' ')}
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic', border: '1px dashed #cbd5e1', padding: '2px 6px', borderRadius: '6px', backgroundColor: '#f8fafc', whiteSpace: 'nowrap' }}>
+                          ⏳ Awaiting Pipeline
+                        </span>
+                      )}
                     </td>
                     <td style={{ padding: '12px 14px' }}>
                       <div className={`neo-badge ${badgeClass}`} style={{ fontSize: '10px', padding: '2px 8px' }}>
@@ -984,21 +988,27 @@ export const Recoveries: React.FC = () => {
               <div>
                 <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, display: 'block' }}>WINBACK PROBABILITY</span>
                 <span style={{ fontSize: '18px', fontWeight: 800, color: '#0369a1' }}>
-                  {Math.round((inspectingCase.recoveryProbability || 0.85) * 100)}%
+                  {inspectingCase.recoveryProbability !== null && inspectingCase.recoveryProbability !== undefined
+                    ? `${Math.round(inspectingCase.recoveryProbability * 100)}%`
+                    : 'Pending Run'}
                 </span>
               </div>
 
               <div>
                 <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, display: 'block' }}>EXPECTED VALUE (EV)</span>
                 <span style={{ fontSize: '18px', fontWeight: 800, color: '#16a34a' }}>
-                  ₹{(inspectingCase.expectedRecoveryValue || Math.round((inspectingCase.amountAtRisk || 5000) * 0.85)).toLocaleString('en-IN')}
+                  {inspectingCase.expectedRecoveryValue
+                    ? `₹${inspectingCase.expectedRecoveryValue.toLocaleString('en-IN')}`
+                    : '—'}
                 </span>
               </div>
 
               <div>
                 <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, display: 'block' }}>STRATEGY ACTION</span>
-                <span style={{ fontSize: '13px', fontWeight: 800, color: '#ca8a04', textTransform: 'uppercase' }}>
-                  {inspectingCase.recommendedAction ? inspectingCase.recommendedAction.replace(/_/g, ' ') : 'retry payment'}
+                <span style={{ fontSize: '13px', fontWeight: 800, color: inspectingCase.recommendedAction ? '#ca8a04' : '#64748b', textTransform: 'uppercase' }}>
+                  {inspectingCase.recommendedAction
+                    ? inspectingCase.recommendedAction.replace(/_/g, ' ')
+                    : '⏳ Awaiting AI Run'}
                 </span>
               </div>
             </div>
@@ -1007,7 +1017,9 @@ export const Recoveries: React.FC = () => {
             <div style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', marginBottom: '18px', fontSize: '13px', lineHeight: 1.4 }}>
               <strong>AI Diagnostic Reasoning:</strong>
               <div style={{ color: '#334155', marginTop: '4px' }}>
-                {inspectingCase.scenario === 'payment_failure'
+                {inspectingCase.status === 'UNPROCESSED' || !inspectingCase.recommendedAction
+                  ? '⚠️ Incident detected in raw transaction stream. The 10-Agent Pipeline has not run on this case yet. Click "⚡ Run Pipeline on Case" below to trigger real-time AI diagnosis and policy evaluation.'
+                  : inspectingCase.scenario === 'payment_failure'
                   ? 'Payment failed due to gateway timeout. Customer has 0 prior failures this month. Auto-retry approved under financial rule POL-01.'
                   : inspectingCase.scenario === 'checkout_abandonment'
                   ? 'High-intent cart session abandoned at payment selection. Strategy generated a time-sensitive Razorpay recovery link with 09:00-19:00 IST compliance.'
