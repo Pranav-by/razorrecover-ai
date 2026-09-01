@@ -6,6 +6,7 @@ import { Recoveries } from './pages/Recoveries';
 import { RecoveryDetail } from './pages/RecoveryDetail';
 import { ReviewQueue } from './pages/ReviewQueue';
 import { Policies } from './pages/Policies';
+import { CustomerPortal } from './pages/CustomerPortal';
 import { TestCases } from './pages/TestCases';
 import { triggerBatchRun, resetData } from './services/api';
 
@@ -100,6 +101,7 @@ export const App: React.FC = () => {
               <Route path="/" element={<Dashboard isRunning={isRunningBatch} onRunBatch={handleRunBatch} onOpenJudgeModal={() => setIsJudgeModalOpen(true)} />} />
               <Route path="/recoveries" element={<Recoveries />} />
               <Route path="/recoveries/:id" element={<RecoveryDetail />} />
+              <Route path="/customer-portal" element={<CustomerPortal />} />
               <Route path="/test-cases" element={<Recoveries />} />
               <Route path="/review" element={<ReviewQueue />} />
               <Route path="/policies" element={<Policies />} />

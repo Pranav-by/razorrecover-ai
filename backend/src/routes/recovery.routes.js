@@ -14,4 +14,10 @@ router.get('/recovery/latest-batch', RecoveryController.getLatestBatch);
 router.get('/recovery/batch/:batchId', RecoveryController.getBatchResult);
 router.get('/recovery/batch/:batchId/export', RecoveryController.exportBatch);
 
+// Customer Portal / Simulation Endpoints
+router.post('/customer/pay/:id', RecoveryController.customerPay);
+router.post('/customer/opt-out/:id', RecoveryController.customerOptOut);
+router.post('/customer/promise/:id', RecoveryController.customerPromise);
+router.post('/customer/dispute/:id', RecoveryController.customerDispute);
+
 module.exports = router;

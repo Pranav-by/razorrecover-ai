@@ -591,7 +591,187 @@ class RecoveryController {
       res.status(200).json({ success: true, message: `Case ${id} deleted successfully` });
     } catch (err) { next(err); }
   }
+
+  /**
+   * POST /api/customer/pay/:id
+   * Simulates customer paying via recovery link or completing retry
+   */
+  static async customerPay(req, res, next) {
+    try {
+      const { id } = req.params;
+      const Transaction = require('../models/Transaction');
+      const AuditLog = require('../models/AuditLog');
+      const mongoose = require('mongoose');
+
+      let orClauses = [{ caseId: id }, { paymentId: id }];
+      if (mongoose.Types.ObjectId.isValid(id)) {
+        orClauses.push({ _id: new mongoose.Types.ObjectId(id) });
+      }
+
+      let rCase = await RecoveryCase.findOne({ $or: orClauses });
+      let txn = await Transaction.findOne({ $or: orClauses });
+
+      const amount = rCase?.amountAtRisk || txn?.amount || 5000;
+      const now = new Date();
+
+      if (rCase) {
+        rCase.status = 'RECOVERED';
+        rCase.recoveredAmount = amount;
+        rCase.recoveredAt = now;
+        await rCase.save();
+
+        await AuditLog.create({
+          recoveryCaseId: rCase._id,
+          event: 'recovery_verified',
+          actor: 'action_agent',
+          message: `Customer completed payment of ₹${amount} via Razorpay Checkout. Settlement verified.`,
+          metadata: { amount, method: req.body.method || 'upi', channel: 'customer_checkout' }
+        });
+      }
+
+      if (txn) {
+        txn.status = 'successful';
+        await txn.save();
+      }
+
+      res.json({
+        success: true,
+        status: 'RECOVERED',
+        recoveredAmount: amount,
+        message: `Payment of ₹${amount.toLocaleString('en-IN')} verified successfully!`
+      });
+    } catch (err) { next(err); }
+  }
+
+  /**
+   * POST /api/customer/opt-out/:id
+   * Simulates customer opting out of future outreach (STOP-02)
+   */
+  static async customerOptOut(req, res, next) {
+    try {
+      const { id } = req.params;
+      const Customer = require('../models/Customer');
+      const Transaction = require('../models/Transaction');
+      const AuditLog = require('../models/AuditLog');
+      const mongoose = require('mongoose');
+
+      let orClauses = [{ caseId: id }, { paymentId: id }];
+      if (mongoose.Types.ObjectId.isValid(id)) orClauses.push({ _id: new mongoose.Types.ObjectId(id) });
+
+      let rCase = await RecoveryCase.findOne({ $or: orClauses });
+      let txn = await Transaction.findOne({ $or: orClauses });
+      const customerId = rCase?.customerId || txn?.customerId;
+
+      if (customerId) {
+        await Customer.updateOne({ customerId }, { optedOut: true });
+      }
+
+      if (rCase) {
+        rCase.status = 'HALTED';
+        await rCase.save();
+
+        await AuditLog.create({
+          recoveryCaseId: rCase._id,
+          event: 'stopping_rule_fired',
+          actor: 'stopping_rules',
+          message: `STOP-02 TRIGGERED: Customer explicitly opted out of communications. All recovery automation permanently halted.`,
+          metadata: { rule: 'STOP-02', customerId }
+        });
+      }
+
+      res.json({
+        success: true,
+        status: 'HALTED',
+        message: 'You have been opted out from all automated notifications.'
+      });
+    } catch (err) { next(err); }
+  }
+
+  /**
+   * POST /api/customer/promise/:id
+   * Records a Promise-to-Pay commitment date from the customer
+   */
+  static async customerPromise(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { promisedDate } = req.body;
+      const AuditLog = require('../models/AuditLog');
+      const mongoose = require('mongoose');
+
+      let orClauses = [{ caseId: id }, { paymentId: id }];
+      if (mongoose.Types.ObjectId.isValid(id)) orClauses.push({ _id: new mongoose.Types.ObjectId(id) });
+
+      let rCase = await RecoveryCase.findOne({ $or: orClauses });
+      if (rCase) {
+        rCase.status = 'PROMISE_LOGGED';
+        await rCase.save();
+
+        await AuditLog.create({
+          recoveryCaseId: rCase._id,
+          event: 'strategy_selected',
+          actor: 'ai',
+          message: `Customer registered Promise-to-Pay commitment for ${promisedDate || 'next business day'}. Dunning reminders suspended until due date.`,
+          metadata: { promisedDate, strategy: 'promise_to_pay_hold' }
+        });
+      }
+
+      res.json({
+        success: true,
+        status: 'PROMISE_LOGGED',
+        promisedDate,
+        message: `Promise-to-pay commitment registered for ${promisedDate}. Thank you!`
+      });
+    } catch (err) { next(err); }
+  }
+
+  /**
+   * POST /api/customer/dispute/:id
+   * Customer reports a transaction dispute (STOP-03) -> Routes to Human Review
+   */
+  static async customerDispute(req, res, next) {
+    try {
+      const { id } = req.params;
+      const Customer = require('../models/Customer');
+      const Transaction = require('../models/Transaction');
+      const AuditLog = require('../models/AuditLog');
+      const mongoose = require('mongoose');
+
+      let orClauses = [{ caseId: id }, { paymentId: id }];
+      if (mongoose.Types.ObjectId.isValid(id)) orClauses.push({ _id: new mongoose.Types.ObjectId(id) });
+
+      let rCase = await RecoveryCase.findOne({ $or: orClauses });
+      let txn = await Transaction.findOne({ $or: orClauses });
+      const customerId = rCase?.customerId || txn?.customerId;
+
+      if (customerId) {
+        await Customer.updateOne(
+          { customerId },
+          { $push: { disputeHistory: { disputeId: `disp_${Date.now()}`, reason: req.body.reason || 'Customer reported billing discrepancy', status: 'open', filedAt: new Date() } } }
+        );
+      }
+
+      if (rCase) {
+        rCase.status = 'HUMAN_REVIEW';
+        await rCase.save();
+
+        await AuditLog.create({
+          recoveryCaseId: rCase._id,
+          event: 'stopping_rule_fired',
+          actor: 'stopping_rules',
+          message: `STOP-03 TRIGGERED: Active dispute filed by customer. Automated outreach suspended and escalated to Human Review Queue.`,
+          metadata: { rule: 'STOP-03', reason: req.body.reason }
+        });
+      }
+
+      res.json({
+        success: true,
+        status: 'HUMAN_REVIEW',
+        message: 'Your inquiry has been escalated to our human support team.'
+      });
+    } catch (err) { next(err); }
+  }
 }
 
 module.exports = RecoveryController;
+
 

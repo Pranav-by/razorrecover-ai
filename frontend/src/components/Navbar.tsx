@@ -1,12 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Zap, Play, RotateCcw, ShieldCheck, Layers, UserCheck, LayoutDashboard, Star, Sparkles, FlaskConical } from 'lucide-react';
+import { Play, RotateCcw, ShieldCheck, Layers, UserCheck, LayoutDashboard, Star, Sparkles, Award, Smartphone } from 'lucide-react';
 
 interface NavbarProps {
   isRunning: boolean;
   onRunBatch: () => void;
   onResetData: () => void;
-  onOpenJudgeModal: () => void;
+  onOpenJudgeModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ isRunning, onRunBatch, onResetData, onOpenJudgeModal }) => {
@@ -15,6 +15,7 @@ export const Navbar: React.FC<NavbarProps> = ({ isRunning, onRunBatch, onResetDa
   const navLinks = [
     { path: '/', label: 'Overview', icon: LayoutDashboard },
     { path: '/recoveries', label: 'Revenue Cases & Test Lab', icon: Layers },
+    { path: '/customer-portal', label: 'Customer Portal', icon: Smartphone },
     { path: '/review', label: 'Review Queue', icon: UserCheck },
     { path: '/policies', label: 'Guardrails', icon: ShieldCheck },
   ];

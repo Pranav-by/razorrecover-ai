@@ -108,4 +108,24 @@ export const deleteTestCase = async (id: string): Promise<any> => {
   return data;
 };
 
+export const customerPay = async (id: string, method: string = 'upi'): Promise<any> => {
+  const { data } = await API.post(`/customer/pay/${id}`, { method });
+  return data;
+};
+
+export const customerOptOut = async (id: string): Promise<any> => {
+  const { data } = await API.post(`/customer/opt-out/${id}`);
+  return data;
+};
+
+export const customerPromise = async (id: string, promisedDate: string): Promise<any> => {
+  const { data } = await API.post(`/customer/promise/${id}`, { promisedDate });
+  return data;
+};
+
+export const customerDispute = async (id: string, reason?: string): Promise<any> => {
+  const { data } = await API.post(`/customer/dispute/${id}`, { reason });
+  return data;
+};
+
 export default API;

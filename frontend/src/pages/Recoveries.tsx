@@ -4,6 +4,82 @@ import { getRecoveries, getTestCases, createTestCase, executeTestCase, deleteTes
 import { Layers, Filter, Search, ChevronRight, Download, Star, Play, Sparkles, X, CheckCircle2, ShieldAlert, Plus, Terminal, FlaskConical, BrainCircuit, ShieldCheck, ArrowRight, Trash2, Building, ExternalLink, Clock, Send, ShieldQuestion, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+const SCENARIO_CONFIG: Record<string, {
+  label: string;
+  reasons: { value: string; label: string }[];
+  methods: { value: string; label: string }[];
+  defaultReason: string;
+  defaultMethod: string;
+}> = {
+  payment_failure: {
+    label: 'Payment Failure',
+    reasons: [
+      { value: 'upi_timeout', label: 'UPI Gateway Timeout (Recoverable)' },
+      { value: 'bank_decline', label: 'Bank Authorization Decline' },
+      { value: 'insufficient_funds', label: 'Insufficient Balance' },
+      { value: '2fa_timeout', label: '2FA / OTP Verification Timeout' },
+      { value: 'network_drop', label: 'Gateway Network Drop' },
+      { value: 'fraud_suspected', label: 'High-Risk Fraud Suspected (Policy Blocked)' },
+    ],
+    methods: [
+      { value: 'upi', label: 'UPI (GPay / PhonePe / Paytm)' },
+      { value: 'card', label: 'Credit / Debit Card' },
+      { value: 'netbanking', label: 'Netbanking (HDFC, ICICI, SBI)' },
+    ],
+    defaultReason: 'upi_timeout',
+    defaultMethod: 'upi',
+  },
+  checkout_abandonment: {
+    label: 'Checkout Abandonment (Cart Drop)',
+    reasons: [
+      { value: 'cart_abandoned_pricing', label: 'Price Objection / Cart Drop' },
+      { value: 'cart_abandoned_shipping', label: 'High Shipping Friction Drop' },
+      { value: 'payment_sheet_closed', label: 'Payment Sheet Closed Prematurely' },
+      { value: 'session_expired', label: 'Checkout Session Timeout' },
+    ],
+    methods: [
+      { value: 'upi', label: 'UPI Instant Checkout' },
+      { value: 'card', label: 'Saved Card' },
+      { value: 'emi', label: 'No-Cost EMI / PayLater' },
+      { value: 'wallet', label: 'Digital Wallets' },
+    ],
+    defaultReason: 'cart_abandoned_pricing',
+    defaultMethod: 'upi',
+  },
+  subscription_failure: {
+    label: 'Subscription Mandate Failure',
+    reasons: [
+      { value: 'expired_card', label: 'Card Mandate Token Expired' },
+      { value: 'mandate_insufficient_funds', label: 'Insufficient Funds on Renewal' },
+      { value: 'token_revoked', label: 'Customer Revoked Mandate Token' },
+      { value: 'bank_mandate_declined', label: 'Bank Declined Recurring Autodebit' },
+    ],
+    methods: [
+      { value: 'card', label: 'Recurring Card Mandate' },
+      { value: 'upi_autopay', label: 'UPI AutoPay Mandate' },
+      { value: 'enach', label: 'eNACH Bank Autodebit' },
+    ],
+    defaultReason: 'expired_card',
+    defaultMethod: 'card',
+  },
+  invoice_overdue: {
+    label: 'Overdue Commercial B2B Invoice',
+    reasons: [
+      { value: 'net30_delayed_clearance', label: 'Net-30 Enterprise Terms Delayed' },
+      { value: 'po_approval_pending', label: 'Purchase Order Approval Hold' },
+      { value: 'finance_audit_hold', label: 'Corporate Finance Batch Audit Delay' },
+      { value: 'disputed_line_item', label: 'Disputed Line Item on Contract' },
+    ],
+    methods: [
+      { value: 'bank_transfer', label: 'Bank Transfer (NEFT / RTGS)' },
+      { value: 'smart_collect', label: 'Razorpay Smart Collect (Virtual Account)' },
+      { value: 'corporate_card', label: 'Commercial Corporate Card' },
+    ],
+    defaultReason: 'net30_delayed_clearance',
+    defaultMethod: 'bank_transfer',
+  },
+};
+
 export const Recoveries: React.FC = () => {
   const [cases, setCases] = useState<RecoveryCase[]>([]);
   const [total, setTotal] = useState(0);
@@ -31,6 +107,16 @@ export const Recoveries: React.FC = () => {
     optedOut: false,
     hasDispute: false
   });
+
+  const handleFormScenarioChange = (newScenario: string) => {
+    const cfg = SCENARIO_CONFIG[newScenario] || SCENARIO_CONFIG.payment_failure;
+    setFormData(prev => ({
+      ...prev,
+      scenario: newScenario,
+      failureReason: cfg.defaultReason,
+      method: cfg.defaultMethod
+    }));
+  };
 
   // Single Execution State & Benchmark Results
   const [executingCaseId, setExecutingCaseId] = useState<string | null>(null);
@@ -1206,32 +1292,28 @@ export const Recoveries: React.FC = () => {
                   </label>
                   <select
                     value={formData.scenario}
-                    onChange={(e) => setFormData({ ...formData, scenario: e.target.value })}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '2px solid var(--border-black)', fontWeight: 600 }}
+                    onChange={(e) => handleFormScenarioChange(e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '2px solid var(--border-black)', fontWeight: 700 }}
                   >
-                    <option value="payment_failure">Payment Failure</option>
-                    <option value="checkout_abandonment">Checkout Abandonment</option>
-                    <option value="subscription_failure">Subscription Failure</option>
-                    <option value="invoice_overdue">Overdue B2B Invoice</option>
+                    <option value="payment_failure">1. Payment Failure</option>
+                    <option value="checkout_abandonment">2. Checkout Abandonment (Cart Drop)</option>
+                    <option value="subscription_failure">3. Subscription Failure (Mandate)</option>
+                    <option value="invoice_overdue">4. Overdue Commercial B2B Invoice</option>
                   </select>
                 </div>
 
                 <div>
                   <label style={{ fontSize: '12px', fontWeight: 800, fontFamily: 'var(--font-heading)', display: 'block', marginBottom: '4px' }}>
-                    Failure Reason Code
+                    Failure Reason Code ({SCENARIO_CONFIG[formData.scenario]?.label || 'Config'})
                   </label>
                   <select
                     value={formData.failureReason}
                     onChange={(e) => setFormData({ ...formData, failureReason: e.target.value })}
                     style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '2px solid var(--border-black)', fontWeight: 600 }}
                   >
-                    <option value="upi_timeout">upi_timeout (Recoverable)</option>
-                    <option value="expired_card">expired_card (Method Update)</option>
-                    <option value="insufficient_funds">insufficient_funds (Payment Link)</option>
-                    <option value="bank_decline">bank_decline</option>
-                    <option value="customer_abandonment">customer_abandonment (Cart Drop)</option>
-                    <option value="invoice_overdue">invoice_overdue (B2B Net-30)</option>
-                    <option value="fraud_suspected">fraud_suspected (Policy Blocked)</option>
+                    {(SCENARIO_CONFIG[formData.scenario]?.reasons || SCENARIO_CONFIG.payment_failure.reasons).map((r) => (
+                      <option key={r.value} value={r.value}>{r.label}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1260,10 +1342,9 @@ export const Recoveries: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, method: e.target.value })}
                     style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '2px solid var(--border-black)', fontWeight: 600 }}
                   >
-                    <option value="upi">UPI</option>
-                    <option value="card">Credit/Debit Card</option>
-                    <option value="netbanking">Netbanking</option>
-                    <option value="bank_transfer">Bank Transfer (B2B)</option>
+                    {(SCENARIO_CONFIG[formData.scenario]?.methods || SCENARIO_CONFIG.payment_failure.methods).map((m) => (
+                      <option key={m.value} value={m.value}>{m.label}</option>
+                    ))}
                   </select>
                 </div>
               </div>
