@@ -154,8 +154,12 @@ export const CustomerPortal: React.FC = () => {
       const targetId = selectedCase._id || selectedCase.paymentId || selectedCase.caseId;
       await customerPay(targetId, selectedMethod);
       const amountVal = selectedCase.amountAtRisk || selectedCase.amount || 0;
-      setActionSuccessMessage(`🎉 Payment of ₹${amountVal.toLocaleString('en-IN')} successfully verified via Razorpay API! Transaction updated to RECOVERED in database.`);
+      setActionSuccessMessage(`🎉 Payment of ₹${amountVal.toLocaleString('en-IN')} successfully verified via Razorpay API! Transaction status updated to RECOVERED.`);
+      
+      // Instant synchronous UI update across both right card and left list
       setSelectedCase((prev: any) => ({ ...prev, status: 'RECOVERED', recoveredAmount: amountVal }));
+      setCases(prev => prev.map(c => ((c.caseId === selectedCase.caseId || (c as any)._id === selectedCase._id || (c as any).paymentId === selectedCase.paymentId) ? { ...c, status: 'RECOVERED', recoveredAmount: amountVal } : c)));
+      
       await fetchCases(selectedCase.caseId);
     } catch (err) {
       console.error('Payment error:', err);
@@ -172,7 +176,11 @@ export const CustomerPortal: React.FC = () => {
       const targetId = selectedCase._id || selectedCase.paymentId || selectedCase.caseId;
       await customerOptOut(targetId);
       setActionSuccessMessage('🛑 STOP-02 Activated: Customer consent revoked. All recovery automation for this account is permanently HALTED in MongoDB.');
+      
+      // Instant synchronous UI update across both right card and left list
       setSelectedCase((prev: any) => ({ ...prev, status: 'HALTED', optedOut: true }));
+      setCases(prev => prev.map(c => ((c.caseId === selectedCase.caseId || (c as any)._id === selectedCase._id || (c as any).paymentId === selectedCase.paymentId) ? { ...c, status: 'HALTED', optedOut: true } : c)));
+      
       await fetchCases(selectedCase.caseId);
     } catch (err) {
       console.error('Opt-out error:', err);
@@ -188,7 +196,11 @@ export const CustomerPortal: React.FC = () => {
       const targetId = selectedCase._id || selectedCase.paymentId || selectedCase.caseId;
       await customerPromise(targetId, promisedDateInput);
       setActionSuccessMessage(`📅 Promise-to-Pay registered for ${promisedDateInput}. Automated follow-up paused until commitment date.`);
+      
+      // Instant synchronous UI update across both right card and left list
       setSelectedCase((prev: any) => ({ ...prev, status: 'PROMISE_LOGGED' }));
+      setCases(prev => prev.map(c => ((c.caseId === selectedCase.caseId || (c as any)._id === selectedCase._id || (c as any).paymentId === selectedCase.paymentId) ? { ...c, status: 'PROMISE_LOGGED' } : c)));
+      
       await fetchCases(selectedCase.caseId);
     } catch (err) {
       console.error('Promise error:', err);
@@ -204,7 +216,11 @@ export const CustomerPortal: React.FC = () => {
       const targetId = selectedCase._id || selectedCase.paymentId || selectedCase.caseId;
       await customerDispute(targetId, disputeReasonInput);
       setActionSuccessMessage('⚠️ STOP-03 Activated: Dispute logged. Outreach suspended immediately and case routed to Human Review Queue.');
+      
+      // Instant synchronous UI update across both right card and left list
       setSelectedCase((prev: any) => ({ ...prev, status: 'HUMAN_REVIEW', hasDispute: true }));
+      setCases(prev => prev.map(c => ((c.caseId === selectedCase.caseId || (c as any)._id === selectedCase._id || (c as any).paymentId === selectedCase.paymentId) ? { ...c, status: 'HUMAN_REVIEW', hasDispute: true } : c)));
+      
       await fetchCases(selectedCase.caseId);
     } catch (err) {
       console.error('Dispute error:', err);
@@ -441,9 +457,21 @@ export const CustomerPortal: React.FC = () => {
                   gap: '6px',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#16a34a', fontWeight: 800, fontSize: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: selectedCase.status === 'RECOVERED' ? '#16a34a' : selectedCase.status === 'HALTED' ? '#dc2626' : selectedCase.status === 'HUMAN_REVIEW' ? '#b45309' : '#0284c7', fontWeight: 800, fontSize: '12px' }}>
                   <MessageSquare size={14} />
-                  <span>Live Autonomous Winback Notification Dispatched to {selectedCase.customerName}:</span>
+                  <span>
+                    {selectedCase.status === 'UNPROCESSED'
+                      ? `Live Winback Notification Preview (Will dispatch upon pipeline run or test response below):`
+                      : selectedCase.status === 'RECOVERED'
+                      ? `✓ Live Customer Payment Verified via Razorpay API (Settlement Cleared):`
+                      : selectedCase.status === 'PROMISE_LOGGED'
+                      ? `📅 Promise-to-Pay Commitment Registered by Customer (Dunning Paused):`
+                      : selectedCase.status === 'HALTED'
+                      ? `🛑 STOP-02 Activated: Customer Opted Out (Outreach Permanently Halted):`
+                      : selectedCase.status === 'HUMAN_REVIEW'
+                      ? `⚠️ STOP-03 Activated: Dispute Filed (Routed to Human Review Queue):`
+                      : `Live Autonomous Winback Notification Dispatched to ${selectedCase.customerName}:`}
+                  </span>
                 </div>
                 <div style={{ fontSize: '13px', color: '#1e293b', fontStyle: 'italic', lineHeight: 1.4 }}>
                   {selectedCase.scenario === 'subscription_failure'

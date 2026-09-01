@@ -624,12 +624,32 @@ class RecoveryController {
       const amount = rCase?.amountAtRisk || txn?.amount || 5000;
       const now = new Date();
 
-      if (rCase) {
+      if (!rCase && txn) {
+        const count = await RecoveryCase.countDocuments();
+        const caseId = `RC_${String(count + 1).padStart(4, '0')}`;
+        rCase = new RecoveryCase({
+          caseId,
+          transactionId: txn._id,
+          customerId: txn.customerId,
+          customerName: txn.customerName || 'Customer',
+          scenario: txn.scenario,
+          amountAtRisk: amount,
+          recoveryProbability: 1.0,
+          expectedRecoveryValue: amount,
+          recommendedAction: 'retry_payment',
+          status: 'RECOVERED',
+          recoveredAmount: amount,
+          recoveredAt: now
+        });
+        await rCase.save();
+      } else if (rCase) {
         rCase.status = 'RECOVERED';
         rCase.recoveredAmount = amount;
         rCase.recoveredAt = now;
         await rCase.save();
+      }
 
+      if (rCase) {
         await AuditLog.create({
           recoveryCaseId: rCase._id,
           event: 'recovery_verified',
@@ -676,10 +696,27 @@ class RecoveryController {
         await Customer.updateOne({ customerId }, { optedOut: true });
       }
 
-      if (rCase) {
-        rCase.status = 'HALTED';
+      if (!rCase && txn) {
+        const count = await RecoveryCase.countDocuments();
+        const caseId = `RC_${String(count + 1).padStart(4, '0')}`;
+        rCase = new RecoveryCase({
+          caseId,
+          transactionId: txn._id,
+          customerId: txn.customerId,
+          customerName: txn.customerName || 'Customer',
+          scenario: txn.scenario,
+          amountAtRisk: txn.amount,
+          status: 'HALTED',
+          optedOut: true
+        });
         await rCase.save();
+      } else if (rCase) {
+        rCase.status = 'HALTED';
+        rCase.optedOut = true;
+        await rCase.save();
+      }
 
+      if (rCase) {
         await AuditLog.create({
           recoveryCaseId: rCase._id,
           event: 'stopping_rule_fired',
@@ -706,16 +743,35 @@ class RecoveryController {
       const { id } = req.params;
       const { promisedDate } = req.body;
       const AuditLog = require('../models/AuditLog');
+      const Transaction = require('../models/Transaction');
       const mongoose = require('mongoose');
 
       let orClauses = [{ caseId: id }, { paymentId: id }];
       if (mongoose.Types.ObjectId.isValid(id)) orClauses.push({ _id: new mongoose.Types.ObjectId(id) });
 
       let rCase = await RecoveryCase.findOne({ $or: orClauses });
-      if (rCase) {
+      let txn = await Transaction.findOne({ $or: orClauses });
+
+      if (!rCase && txn) {
+        const count = await RecoveryCase.countDocuments();
+        const caseId = `RC_${String(count + 1).padStart(4, '0')}`;
+        rCase = new RecoveryCase({
+          caseId,
+          transactionId: txn._id,
+          customerId: txn.customerId,
+          customerName: txn.customerName || 'Customer',
+          scenario: txn.scenario,
+          amountAtRisk: txn.amount,
+          status: 'PROMISE_LOGGED',
+          recommendedAction: 'send_reminder'
+        });
+        await rCase.save();
+      } else if (rCase) {
         rCase.status = 'PROMISE_LOGGED';
         await rCase.save();
+      }
 
+      if (rCase) {
         await AuditLog.create({
           recoveryCaseId: rCase._id,
           event: 'strategy_selected',
@@ -760,10 +816,27 @@ class RecoveryController {
         );
       }
 
-      if (rCase) {
-        rCase.status = 'HUMAN_REVIEW';
+      if (!rCase && txn) {
+        const count = await RecoveryCase.countDocuments();
+        const caseId = `RC_${String(count + 1).padStart(4, '0')}`;
+        rCase = new RecoveryCase({
+          caseId,
+          transactionId: txn._id,
+          customerId: txn.customerId,
+          customerName: txn.customerName || 'Customer',
+          scenario: txn.scenario,
+          amountAtRisk: txn.amount,
+          status: 'HUMAN_REVIEW',
+          hasDispute: true
+        });
         await rCase.save();
+      } else if (rCase) {
+        rCase.status = 'HUMAN_REVIEW';
+        rCase.hasDispute = true;
+        await rCase.save();
+      }
 
+      if (rCase) {
         await AuditLog.create({
           recoveryCaseId: rCase._id,
           event: 'stopping_rule_fired',
