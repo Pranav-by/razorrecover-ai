@@ -507,99 +507,180 @@ export const CustomerPortal: React.FC = () => {
                 </div>
               )}
 
-              {/* Dynamic Interactive Customer Options */}
+              {/* Dynamic Interactive Customer Options / State Cards */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <span style={{ fontSize: '12px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#64748b' }}>
-                  INTERACTIVE TWO-WAY CUSTOMER ACTIONS:
+                  {selectedCase.status === 'RECOVERED'
+                    ? 'SETTLEMENT VERIFICATION STATUS:'
+                    : selectedCase.status === 'HALTED' || selectedCase.optedOut
+                    ? 'COMPLIANCE CONSENT STATUS:'
+                    : selectedCase.status === 'HUMAN_REVIEW' || selectedCase.hasDispute
+                    ? 'DISPUTE REVIEW STATUS:'
+                    : selectedCase.status === 'PROMISE_LOGGED'
+                    ? 'COMMITMENT TRACKING STATUS:'
+                    : 'INTERACTIVE TWO-WAY CUSTOMER ACTIONS:'}
                 </span>
 
-                {/* Option 1: Scenario-Specific Payment / Retry Execution */}
-                <div style={{ padding: '16px', borderRadius: '12px', border: '2px solid var(--border-black)', backgroundColor: '#fffdfa', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontWeight: 800, fontSize: '14px' }}>
-                      {selectedCase.scenario === 'subscription_failure'
-                        ? '💳 Update Card Mandate & Re-Authorize'
-                        : selectedCase.scenario === 'invoice_overdue'
-                        ? '🏢 Clear Commercial Invoice (NEFT / Virtual Account)'
-                        : '⚡ 1-Click Pay / Complete Payment Retry'}
+                {/* State 1: Paid / Settled */}
+                {selectedCase.status === 'RECOVERED' ? (
+                  <div style={{ padding: '24px', borderRadius: '12px', border: '2px solid #86efac', backgroundColor: '#f0fdf4', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', textAlign: 'center' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#16a34a' }}>
+                      <CheckCircle2 size={28} />
                     </div>
-                    <span className="neo-badge neo-badge-green" style={{ fontSize: '10px' }}>Instant Settlement</span>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '18px', color: '#14532d' }}>Payment Successfully Settled &amp; Cleared</div>
+                      <div style={{ fontSize: '13px', color: '#166534', marginTop: '4px' }}>
+                        Verified via Razorpay API • ₹{(selectedCase.amountAtRisk || selectedCase.amount || 0).toLocaleString('en-IN')} paid in full.
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#15803d', fontWeight: 700, backgroundColor: '#ffffff', padding: '6px 14px', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                      ✓ Transaction Closed • Zero Outstanding Balance • Ledger Sealed
+                    </div>
                   </div>
-
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    <select
-                      value={selectedMethod}
-                      onChange={(e) => setSelectedMethod(e.target.value)}
-                      style={{ padding: '8px 12px', borderRadius: '8px', border: '2px solid var(--border-black)', fontWeight: 700, fontSize: '12px', flex: 1, minWidth: '180px' }}
-                    >
-                      <option value="upi">UPI (GPay / PhonePe / Paytm)</option>
-                      <option value="card">Credit / Debit Card</option>
-                      <option value="netbanking">Netbanking (HDFC, ICICI, SBI)</option>
-                      {selectedCase.scenario === 'invoice_overdue' && <option value="bank_transfer">NEFT / RTGS Virtual Account</option>}
-                    </select>
-
-                    <button
-                      onClick={handleCustomerPay}
-                      disabled={isProcessingAction || selectedCase.status === 'RECOVERED'}
-                      className="neo-btn neo-btn-primary"
-                      style={{ fontWeight: 800 }}
-                    >
-                      {isProcessingAction ? 'Processing...' : selectedCase.status === 'RECOVERED' ? '✓ Settlement Verified' : `💳 Pay ₹${(selectedCase.amountAtRisk || 0).toLocaleString('en-IN')}`}
-                    </button>
+                ) : selectedCase.status === 'HALTED' || selectedCase.optedOut ? (
+                  /* State 2: Opted Out (STOP-02) */
+                  <div style={{ padding: '24px', borderRadius: '12px', border: '2px solid #fca5a5', backgroundColor: '#fef2f2', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', textAlign: 'center' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#dc2626' }}>
+                      <UserX size={28} />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '18px', color: '#7f1d1d' }}>Outreach Permanently Halted (STOP-02)</div>
+                      <div style={{ fontSize: '13px', color: '#991b1b', marginTop: '4px', maxWidth: '380px' }}>
+                        Customer consent was revoked. Per compliance rules, all automated outreach, payment reminders, and gateway retries are permanently frozen for this customer.
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#b91c1c', fontWeight: 700, backgroundColor: '#ffffff', padding: '6px 14px', borderRadius: '8px', border: '1px solid #fecaca' }}>
+                      🛑 DO NOT CONTACT Status Active in Master Record
+                    </div>
                   </div>
-                </div>
-
-                {/* Option 2: Promise to Pay Date Registration */}
-                <div style={{ padding: '16px', borderRadius: '12px', border: '2px solid var(--border-black)', backgroundColor: '#fffdfa', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontWeight: 800, fontSize: '14px' }}>📅 Register Promise-to-Pay Date (Pause Dunning)</div>
-                    <span className="neo-badge neo-badge-blue" style={{ fontSize: '10px' }}>Holds Escalations</span>
+                ) : selectedCase.status === 'HUMAN_REVIEW' || selectedCase.hasDispute ? (
+                  /* State 3: Dispute Active (STOP-03) */
+                  <div style={{ padding: '24px', borderRadius: '12px', border: '2px solid #fde047', backgroundColor: '#fffbeb', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', textAlign: 'center' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d97706' }}>
+                      <AlertTriangle size={28} />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '18px', color: '#78350f' }}>Dispute Escalated to Human Review (STOP-03)</div>
+                      <div style={{ fontSize: '13px', color: '#92400e', marginTop: '4px', maxWidth: '380px' }}>
+                        Active dispute logged. Automated dunning is frozen, and this case has been assigned to a compliance operator in the Review Queue.
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#b45309', fontWeight: 700, backgroundColor: '#ffffff', padding: '6px 14px', borderRadius: '8px', border: '1px solid #fef08a' }}>
+                      ⚠️ Operator Review Required in Human Queue
+                    </div>
                   </div>
+                ) : selectedCase.status === 'PROMISE_LOGGED' ? (
+                  /* State 4: Promise-to-Pay Active */
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ padding: '18px', borderRadius: '12px', border: '2px solid #93c5fd', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <Clock size={24} color="#1d4ed8" />
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '15px', color: '#1e3a8a' }}>Promise-to-Pay Commitment Active</div>
+                        <div style={{ fontSize: '12px', color: '#1e40af', marginTop: '2px' }}>
+                          Scheduled Settlement Target: <strong>{promisedDateInput || '2026-09-05'}</strong>. Automated dunning reminders are paused until this date.
+                        </div>
+                      </div>
+                    </div>
 
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    <input
-                      type="date"
-                      value={promisedDateInput}
-                      onChange={(e) => setPromisedDateInput(e.target.value)}
-                      style={{ padding: '8px 12px', borderRadius: '8px', border: '2px solid var(--border-black)', fontWeight: 700, fontSize: '12px', flex: 1, minWidth: '180px' }}
-                    />
-
-                    <button
-                      onClick={handleCustomerPromise}
-                      disabled={isProcessingAction}
-                      className="neo-btn neo-btn-white"
-                      style={{ fontWeight: 800 }}
-                    >
-                      <Calendar size={14} />
-                      <span>Submit Commitment Date</span>
-                    </button>
+                    <div style={{ padding: '16px', borderRadius: '12px', border: '2px solid var(--border-black)', backgroundColor: '#fffdfa', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ fontWeight: 800, fontSize: '13px' }}>Want to settle now ahead of scheduled commitment date?</div>
+                      <button onClick={handleCustomerPay} disabled={isProcessingAction} className="neo-btn neo-btn-primary" style={{ fontWeight: 800, width: '100%', justifyContent: 'center' }}>
+                        {isProcessingAction ? 'Processing...' : `💳 Pay ₹${(selectedCase.amountAtRisk || 0).toLocaleString('en-IN')} Now`}
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  /* State 5: Active Action Form for Unprocessed / Evaluated cases */
+                  <>
+                    {/* Option 1: Scenario-Specific Payment / Retry Execution */}
+                    <div style={{ padding: '16px', borderRadius: '12px', border: '2px solid var(--border-black)', backgroundColor: '#fffdfa', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontWeight: 800, fontSize: '14px' }}>
+                          {selectedCase.scenario === 'subscription_failure'
+                            ? '💳 Update Card Mandate & Re-Authorize'
+                            : selectedCase.scenario === 'invoice_overdue'
+                            ? '🏢 Clear Commercial Invoice (NEFT / Virtual Account)'
+                            : '⚡ 1-Click Pay / Complete Payment Retry'}
+                        </div>
+                        <span className="neo-badge neo-badge-green" style={{ fontSize: '10px' }}>Instant Settlement</span>
+                      </div>
 
-                {/* Option 3: Compliance & Stopping Rules (STOP-02 Opt Out and STOP-03 Dispute) */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <button
-                    onClick={handleCustomerOptOut}
-                    disabled={isProcessingAction || selectedCase.status === 'HALTED' || selectedCase.optedOut}
-                    className="neo-btn neo-btn-coral"
-                    style={{ fontSize: '12px', justifyContent: 'center' }}
-                    title="Triggers STOP-02 policy rule: customer consent revoked"
-                  >
-                    <UserX size={14} />
-                    <span>{selectedCase.optedOut ? '🛑 Opted Out (STOP-02)' : '🛑 Opt-Out (STOP-02)'}</span>
-                  </button>
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <select
+                          value={selectedMethod}
+                          onChange={(e) => setSelectedMethod(e.target.value)}
+                          style={{ padding: '8px 12px', borderRadius: '8px', border: '2px solid var(--border-black)', fontWeight: 700, fontSize: '12px', flex: 1, minWidth: '180px' }}
+                        >
+                          <option value="upi">UPI (GPay / PhonePe / Paytm)</option>
+                          <option value="card">Credit / Debit Card</option>
+                          <option value="netbanking">Netbanking (HDFC, ICICI, SBI)</option>
+                          {selectedCase.scenario === 'invoice_overdue' && <option value="bank_transfer">NEFT / RTGS Virtual Account</option>}
+                        </select>
 
-                  <button
-                    onClick={handleCustomerDispute}
-                    disabled={isProcessingAction || selectedCase.hasDispute}
-                    className="neo-btn neo-btn-white"
-                    style={{ fontSize: '12px', justifyContent: 'center', backgroundColor: '#fff7d6' }}
-                    title="Triggers STOP-03 policy rule: dispute routed to human review"
-                  >
-                    <AlertTriangle size={14} color="#b45309" />
-                    <span>{selectedCase.hasDispute ? '⚠️ In Review (STOP-03)' : '⚠️ Report Dispute (STOP-03)'}</span>
-                  </button>
-                </div>
+                        <button
+                          onClick={handleCustomerPay}
+                          disabled={isProcessingAction}
+                          className="neo-btn neo-btn-primary"
+                          style={{ fontWeight: 800 }}
+                        >
+                          {isProcessingAction ? 'Processing...' : `💳 Pay ₹${(selectedCase.amountAtRisk || 0).toLocaleString('en-IN')}`}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Option 2: Promise to Pay Date Registration */}
+                    <div style={{ padding: '16px', borderRadius: '12px', border: '2px solid var(--border-black)', backgroundColor: '#fffdfa', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontWeight: 800, fontSize: '14px' }}>📅 Register Promise-to-Pay Date (Pause Dunning)</div>
+                        <span className="neo-badge neo-badge-blue" style={{ fontSize: '10px' }}>Holds Escalations</span>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <input
+                          type="date"
+                          value={promisedDateInput}
+                          onChange={(e) => setPromisedDateInput(e.target.value)}
+                          style={{ padding: '8px 12px', borderRadius: '8px', border: '2px solid var(--border-black)', fontWeight: 700, fontSize: '12px', flex: 1, minWidth: '180px' }}
+                        />
+
+                        <button
+                          onClick={handleCustomerPromise}
+                          disabled={isProcessingAction}
+                          className="neo-btn neo-btn-white"
+                          style={{ fontWeight: 800 }}
+                        >
+                          <Calendar size={14} />
+                          <span>Submit Commitment Date</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Option 3: Compliance & Stopping Rules (STOP-02 Opt Out and STOP-03 Dispute) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <button
+                        onClick={handleCustomerOptOut}
+                        disabled={isProcessingAction}
+                        className="neo-btn neo-btn-coral"
+                        style={{ fontSize: '12px', justifyContent: 'center' }}
+                        title="Triggers STOP-02 policy rule: customer consent revoked"
+                      >
+                        <UserX size={14} />
+                        <span>🛑 Opt-Out (STOP-02)</span>
+                      </button>
+
+                      <button
+                        onClick={handleCustomerDispute}
+                        disabled={isProcessingAction}
+                        className="neo-btn neo-btn-white"
+                        style={{ fontSize: '12px', justifyContent: 'center', backgroundColor: '#fff7d6' }}
+                        title="Triggers STOP-03 policy rule: dispute routed to human review"
+                      >
+                        <AlertTriangle size={14} color="#b45309" />
+                        <span>⚠️ Report Dispute (STOP-03)</span>
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', borderTop: '1px solid #e2e8f0', paddingTop: '14px' }}>
