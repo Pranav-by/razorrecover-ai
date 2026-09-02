@@ -8,7 +8,6 @@ import { IndianRupee, ShieldCheck, UserCheck, TrendingUp, AlertTriangle, Play, S
 import { Link } from 'react-router-dom';
 
 import { DemoSandbox } from '../components/DemoSandbox';
-import { PromiseTracker } from '../components/PromiseTracker';
 import { CaseInspectModal } from '../components/CaseInspectModal';
 
 interface DashboardProps {
@@ -231,9 +230,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
         <RevenueChart breakdown={breakdown} />
         <AgentActivity isRunning={isRunning} />
       </div>
-
-      {/* ─── B2B Promise-to-Pay Tracker (Track 03 Feature) ─── */}
-      <PromiseTracker />
 
       {/* ─── Recent Incidents Stream Table ─── */}
       <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
