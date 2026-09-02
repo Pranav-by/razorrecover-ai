@@ -410,25 +410,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
         )}
       </div>
 
-      {/* Floating Action Button (+) — Ingest Custom Leak / Test Suite */}
-      <div
-        style={{
-          position: 'fixed',
-          bottom: '28px',
-          right: '28px',
-          zIndex: 99,
-        }}
-      >
-        <Link
-          to="/recoveries"
-          className="neo-fab"
-          title="➕ Ingest Custom Leak / Open Test Suite"
-          style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        >
-          <Plus size={28} strokeWidth={3} color="#121316" />
-        </Link>
-      </div>
-
       {/* ─── 🌟 RICH CASE QUICK-INSPECT MODAL (DASHBOARD) ─── */}
       {inspectingCase && (
         <CaseInspectModal
