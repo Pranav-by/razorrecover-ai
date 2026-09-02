@@ -228,7 +228,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
       {/* ─── Charts & Agent Activity Row ─── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
         <RevenueChart breakdown={breakdown} />
-        <AgentActivity isRunning={isRunning} />
+        <AgentActivity
+          isRunning={isRunning}
+          summary={summary}
+          latestBatch={latestBatch}
+          breakdown={breakdown}
+        />
       </div>
 
       {/* ─── Recent Incidents Stream Table ─── */}
