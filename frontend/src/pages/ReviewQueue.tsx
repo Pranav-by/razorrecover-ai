@@ -122,7 +122,13 @@ export const ReviewQueue: React.FC = () => {
                 <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
                   <div>
                     <div style={{ fontSize: '11px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#64748b' }}>CUSTOMER</div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#121316' }}>{item.customerName}</div>
+                    <Link
+                      to={`/customer-portal?caseId=${item.caseId}&customerId=${item.customerId}`}
+                      style={{ fontSize: '14px', fontWeight: 700, color: '#0369a1', textDecoration: 'underline' }}
+                      title={`Open Customer Portal for ${item.customerName}`}
+                    >
+                      {item.customerName} ↗
+                    </Link>
                   </div>
                   <div>
                     <div style={{ fontSize: '11px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#64748b' }}>AMOUNT AT RISK</div>

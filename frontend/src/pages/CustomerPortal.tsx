@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getRecoveries, createTestCase, customerPay, customerOptOut, customerPromise, customerDispute } from '../services/api';
 import { RecoveryCase } from '../types';
 import { ShoppingBag, CreditCard, RefreshCw, Send, CheckCircle2, AlertTriangle, ShieldCheck, Clock, UserX, MessageSquare, Sparkles, ArrowRight, ExternalLink, Calendar, Plus, Smartphone, Building, ShieldAlert, Check, Search, Filter, Hash, User, DollarSign } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { CaseInspectModal } from '../components/CaseInspectModal';
 
 const SCENARIO_CONFIG: Record<string, {
@@ -82,6 +82,11 @@ const SCENARIO_CONFIG: Record<string, {
 };
 
 export const CustomerPortal: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const queryCaseId = searchParams.get('caseId') || searchParams.get('id');
+  const queryCustomerId = searchParams.get('customerId');
+  const queryPaymentId = searchParams.get('paymentId');
+
   const [activeTab, setActiveTab] = useState<'outreach' | 'simulator'>('outreach');
   const [cases, setCases] = useState<RecoveryCase[]>([]);
   const [selectedCase, setSelectedCase] = useState<any | null>(null);
@@ -117,16 +122,39 @@ export const CustomerPortal: React.FC = () => {
   const fetchCases = async (selectId?: string) => {
     setLoading(true);
     try {
-      const res = await getRecoveries({ limit: 200 });
-      setCases(res.cases || []);
-      if (selectId) {
-        const found = (res.cases || []).find((c: any) => c.caseId === selectId || c._id === selectId || c.paymentId === selectId);
-        if (found) setSelectedCase(found);
-      } else if (res.cases && res.cases.length > 0) {
-        if (!selectedCase || !res.cases.some((c: any) => c.caseId === selectedCase.caseId)) {
-          setSelectedCase(res.cases[0]);
+      let res = await getRecoveries({ limit: 200 });
+      let list = res.cases || [];
+
+      // If query param is requested but not in active recoveries list, fetch catalog to show that specific customer
+      const targetQuery = selectId || queryCaseId || queryCustomerId || queryPaymentId;
+      if (targetQuery && (!list.length || !list.some((c: any) => c.caseId === targetQuery || c._id === targetQuery || c.customerId === targetQuery || c.paymentId === targetQuery))) {
+        const catalogRes = await getRecoveries({ limit: 200, includeCatalog: 'true' } as any);
+        if (catalogRes.cases && catalogRes.cases.length) {
+          list = catalogRes.cases;
+        }
+      }
+
+      setCases(list);
+
+      const targetToMatch = selectId || queryCaseId || queryCustomerId || queryPaymentId;
+      if (targetToMatch) {
+        const found = list.find((c: any) =>
+          c.caseId === targetToMatch ||
+          c._id === targetToMatch ||
+          c.customerId === targetToMatch ||
+          c.paymentId === targetToMatch
+        );
+        if (found) {
+          setSelectedCase(found);
+          return;
+        }
+      }
+
+      if (list.length > 0) {
+        if (!selectedCase || !list.some((c: any) => c.caseId === selectedCase.caseId)) {
+          setSelectedCase(list[0]);
         } else {
-          const updated = res.cases.find((c: any) => c.caseId === selectedCase.caseId);
+          const updated = list.find((c: any) => c.caseId === selectedCase.caseId);
           if (updated) setSelectedCase(updated);
         }
       } else {
@@ -141,7 +169,7 @@ export const CustomerPortal: React.FC = () => {
 
   useEffect(() => {
     fetchCases();
-  }, []);
+  }, [queryCaseId, queryCustomerId, queryPaymentId]);
 
   const handleScenarioChange = (newScenario: string) => {
     const cfg = SCENARIO_CONFIG[newScenario] || SCENARIO_CONFIG.payment_failure;

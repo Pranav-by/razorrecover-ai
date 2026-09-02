@@ -312,8 +312,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
                           {item.caseId}
                         </span>
                       </td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <td style={{ padding: '12px 14px' }} onClick={(e) => e.stopPropagation()}>
+                        <Link
+                          to={`/customer-portal?caseId=${item.caseId}&customerId=${item.customerId}`}
+                          style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', color: 'inherit' }}
+                          title={`Open Customer Portal for ${item.customerName} (${item.customerId})`}
+                        >
                           <div
                             style={{
                               width: '28px',
@@ -326,15 +330,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
                               justifyContent: 'center',
                               fontSize: '12px',
                               fontWeight: 800,
+                              color: '#121316',
                             }}
                           >
                             {item.customerName ? item.customerName.charAt(0) : 'C'}
                           </div>
                           <div>
-                            <div style={{ fontWeight: 700, color: '#121316' }}>{item.customerName}</div>
-                            <div style={{ fontSize: '11px', color: '#64748b' }}>{item.customerId}</div>
+                            <div style={{ fontWeight: 700, color: '#0369a1', textDecoration: 'underline' }}>{item.customerName}</div>
+                            <div style={{ fontSize: '11px', color: '#64748b' }}>{item.customerId} ↗</div>
                           </div>
-                        </div>
+                        </Link>
                       </td>
                       <td style={{ padding: '12px 14px' }}>
                         <div className="neo-badge" style={{ fontSize: '10px', padding: '2px 8px' }}>

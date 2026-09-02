@@ -284,9 +284,14 @@ export const CaseInspectModal: React.FC<CaseInspectModalProps> = ({ caseData, on
               </span>
             </div>
 
-            <div style={{ fontFamily: 'var(--font-heading)', fontSize: '24px', fontWeight: 900, color: 'var(--border-black)' }}>
-              {currentCase.customerName || 'Customer'}
-            </div>
+            <Link
+              to={`/customer-portal?caseId=${currentCase.caseId || currentCase._id}&customerId=${currentCase.customerId || ''}`}
+              onClick={onClose}
+              style={{ fontFamily: 'var(--font-heading)', fontSize: '24px', fontWeight: 900, color: '#0369a1', textDecoration: 'underline', display: 'inline-block' }}
+              title={`Open Customer Portal for ${currentCase.customerName}`}
+            >
+              {currentCase.customerName || 'Customer'} ↗
+            </Link>
             <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
               Customer ID: <strong>{currentCase.customerId || 'CUS_LIVE'}</strong> • Risk Profile: <strong>{customerRisk}</strong> • Attempts: <strong>{attemptCount}/2</strong>
             </div>
@@ -460,7 +465,7 @@ export const CaseInspectModal: React.FC<CaseInspectModalProps> = ({ caseData, on
             </button>
 
             <Link
-              to="/customer-portal"
+              to={`/customer-portal?caseId=${currentCase.caseId || currentCase._id}&customerId=${currentCase.customerId || ''}`}
               onClick={onClose}
               className="neo-btn neo-btn-sm"
               style={{
