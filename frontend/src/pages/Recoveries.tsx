@@ -351,7 +351,7 @@ export const Recoveries: React.FC = () => {
           </h1>
 
           <p style={{ fontSize: '14px', color: '#475569', fontWeight: 500, margin: 0 }}>
-            Unified command hub to inspect all 180+ leak incidents, trigger 1-click single-case telemetry executions, open rich case inspection modals, run automated guardrail tests, and ingest custom transaction edge cases.
+            Unified command hub to inspect all 180+ leak incidents, trigger 1-click single-case telemetry executions, open rich case inspection modals, and ingest custom transaction edge cases.
           </p>
         </div>
 
@@ -365,24 +365,6 @@ export const Recoveries: React.FC = () => {
           </button>
 
           <button
-            onClick={handleRunUnitTests}
-            disabled={runningUnitTests}
-            className="neo-btn neo-btn-white neo-btn-lg"
-          >
-            {runningUnitTests ? (
-              <>
-                <Sparkles size={16} className="animate-spin" />
-                <span>Running Tests...</span>
-              </>
-            ) : (
-              <>
-                <Terminal size={16} />
-                <span>{testExecutionDone ? '✓ 18/18 Unit Tests Passed' : 'Run 18 Guardrail Tests'}</span>
-              </>
-            )}
-          </button>
-
-          <button
             onClick={() => exportAuditMatrix()}
             className="neo-btn neo-btn-white neo-btn-lg"
             title="Download ISO-Compliant Audit Matrix as CSV"
@@ -390,61 +372,6 @@ export const Recoveries: React.FC = () => {
             <Download size={16} />
             <span>Export CSV</span>
           </button>
-        </div>
-      </div>
-
-      {/* 18 Automated Unit Tests Showcase Box */}
-      <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#121316', color: '#ffffff' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <Terminal size={16} color="#ffe600" />
-              <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '16px', color: '#ffe600' }}>
-                Automated Guardrail Unit Tests (Jest Test Suite)
-              </span>
-            </div>
-            <span style={{ fontSize: '12px', color: '#94a3b8' }}>
-              18 deterministic assertions verifying Policy Engine thresholds, stopping rules, and idempotency
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span className="neo-badge neo-badge-green" style={{ fontSize: '11px' }}>
-              ● 18 / 18 PASSING (100%)
-            </span>
-          </div>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '12px' }}>
-          {(unitTests.length > 0 ? unitTests : [
-            { id: 'POL-01', title: 'Valid Low-Amount Retry Approval', input: '₹5,000, 0 prior attempts, upi_timeout', expected: 'APPROVED (Automatic retry permitted)' },
-            { id: 'POL-02', title: 'Retry Cap Limit Enforcement', input: '2 prior attempts (max 2), upi_timeout', expected: 'BLOCKED (Retry limit exceeded)' },
-            { id: 'POL-05', title: 'Auto-Action Threshold Boundary Check', input: '₹10,001 (₹1 above ₹10,000 limit)', expected: 'BLOCKED (Exceeds auto threshold)' },
-            { id: 'POL-06', title: 'High-Value Escalation Check', input: '₹55,000 commercial transaction', expected: 'BLOCKED (Requires human review)' },
-            { id: 'STOP-02', title: 'Customer Consent Opt-Out Freeze', input: 'Customer profile: optedOut = true', expected: 'PERMANENT HALT (0 messages sent)' },
-            { id: 'ACT-01', title: 'Deterministic Key Generation', input: 'Case RC_0001, Attempt 1', expected: 'Key format: recovery_RC_0001_attempt_01' },
-          ]).slice(0, 6).map((test: any) => (
-            <div
-              key={test.id}
-              style={{
-                padding: '12px 14px',
-                borderRadius: '10px',
-                backgroundColor: '#1e293b',
-                border: '1px solid #334155',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '4px',
-                fontSize: '12px',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>{test.id}: {test.title}</span>
-                <span style={{ color: '#4ade80', fontWeight: 800, fontSize: '11px' }}>✓ PASS</span>
-              </div>
-              <div style={{ color: '#94a3b8', fontSize: '11px' }}><strong>Input:</strong> {test.input}</div>
-              <div style={{ color: '#e2e8f0', fontSize: '11px' }}><strong>Expected:</strong> {test.expected}</div>
-            </div>
-          ))}
         </div>
       </div>
 
