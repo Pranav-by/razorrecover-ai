@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 
 import { DemoSandbox } from '../components/DemoSandbox';
 import { CaseInspectModal } from '../components/CaseInspectModal';
+import { FeaturesShowcase } from '../components/FeaturesShowcase';
 
 interface DashboardProps {
   isRunning: boolean;
@@ -235,6 +236,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
           breakdown={breakdown}
         />
       </div>
+
+      {/* ─── Core Platform Architecture & Features Showcase ─── */}
+      <FeaturesShowcase />
 
       {/* ─── Recent Incidents Stream Table ─── */}
       <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
