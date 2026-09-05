@@ -25,3 +25,8 @@ Thumbs.db
 .cursor/
 # Agent skills (internal AI config)
 .agents/
+
+# Demo pitch script & presentation materials
+DEMO_PITCH_SCRIPT.md
+*demo_pitch*
+*demo-pitch*
