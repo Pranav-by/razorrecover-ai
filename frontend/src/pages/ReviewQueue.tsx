@@ -133,7 +133,7 @@ export const ReviewQueue: React.FC = () => {
                   <div>
                     <div style={{ fontSize: '11px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#64748b' }}>AMOUNT AT RISK</div>
                     <div style={{ fontSize: '16px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#121316' }}>
-                      ₹{item.amountAtRisk.toLocaleString('en-IN')}
+                      ₹{(item.amountAtRisk || (item as any).amount || 0).toLocaleString('en-IN')}
                     </div>
                   </div>
                   <div>

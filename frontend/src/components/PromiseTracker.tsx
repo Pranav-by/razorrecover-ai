@@ -132,7 +132,7 @@ export const PromiseTracker: React.FC = () => {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <span style={{ fontFamily: 'var(--font-heading)', fontSize: '20px', fontWeight: 800, color: 'var(--border-black)' }}>
-                  ₹{item.amount.toLocaleString('en-IN')}
+                  ₹{(item.amount || 0).toLocaleString('en-IN')}
                 </span>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#16a34a' }}>
                   {Math.round(item.confidence * 100)}% Confidence
@@ -221,7 +221,7 @@ export const PromiseTracker: React.FC = () => {
               <div>
                 <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, display: 'block' }}>INVOICE AMOUNT</span>
                 <span style={{ fontSize: '22px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#121316' }}>
-                  ₹{selectedPromise.amount.toLocaleString('en-IN')}
+                  ₹{(selectedPromise?.amount || 0).toLocaleString('en-IN')}
                 </span>
               </div>
 

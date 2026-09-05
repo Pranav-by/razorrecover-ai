@@ -38,7 +38,7 @@ export const AgentActivity: React.FC<AgentActivityProps> = ({
       ? `₹${(totalRisk / 10000000).toFixed(2)}Cr`
       : totalRisk >= 100000
       ? `₹${(totalRisk / 100000).toFixed(1)}L`
-      : `₹${totalRisk.toLocaleString('en-IN')}`;
+      : `₹${(totalRisk || 0).toLocaleString('en-IN')}`;
 
   const steps: AgentStep[] = [
     {
@@ -97,7 +97,7 @@ export const AgentActivity: React.FC<AgentActivityProps> = ({
       detail: isRunning
         ? 'Dispatching 1-click links, reminders & registering commitments...'
         : recoveredAmt > 0
-        ? `₹${recoveredAmt.toLocaleString('en-IN')} recovered (${recoveryRate}% conversion) • Cryptographically sealed`
+        ? `₹${(recoveredAmt || 0).toLocaleString('en-IN')} recovered (${recoveryRate || 0}% conversion) • Cryptographically sealed`
         : 'Standby for customer portal settlements & API interventions',
       badge: recoveredAmt > 0 ? `₹${(recoveredAmt / 1000).toFixed(0)}k Won` : 'Standby',
       badgeColor: recoveredAmt > 0 ? '#15803d' : '#475569',

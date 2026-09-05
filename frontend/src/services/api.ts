@@ -1,8 +1,10 @@
 import axios from 'axios';
 import { DashboardSummary, RevenueBreakdown, RecoveryCase, BatchRun } from '../types';
 
+const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
+
 const API = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE_URL,
   timeout: 60000,
 });
 

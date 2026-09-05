@@ -61,7 +61,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ breakdown }) => {
       ? `₹${(totalAtRisk / 10000000).toFixed(2)}Cr`
       : totalAtRisk >= 100000
       ? `₹${(totalAtRisk / 100000).toFixed(2)}L`
-      : `₹${totalAtRisk.toLocaleString('en-IN')}`;
+      : `₹${(totalAtRisk || 0).toLocaleString('en-IN')}`;
 
   return (
     <div className="neo-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -143,7 +143,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ breakdown }) => {
                         <span>{data.fullName}</span>
                       </div>
                       <div style={{ fontSize: '16px', fontWeight: 900, color: '#121316' }}>
-                        ₹{data.amount.toLocaleString('en-IN')}
+                        ₹{(data?.amount || 0).toLocaleString('en-IN')}
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748b', marginTop: '6px', borderTop: '1px solid #e2e8f0', paddingTop: '6px' }}>
                         <span>Portfolio Share:</span>
@@ -151,11 +151,11 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ breakdown }) => {
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
                         <span>Incidents:</span>
-                        <strong>{data.count} cases</strong>
+                        <strong>{data?.count || 0} cases</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
                         <span>Avg Ticket:</span>
-                        <strong>₹{avgPerIncident.toLocaleString('en-IN')}</strong>
+                        <strong>₹{(avgPerIncident || 0).toLocaleString('en-IN')}</strong>
                       </div>
                     </div>
                   );
@@ -175,7 +175,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ breakdown }) => {
       {/* Dynamic Breakdown Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
         {chartData.map((item) => {
-          const share = totalAtRisk > 0 ? ((item.amount / totalAtRisk) * 100).toFixed(1) : '0';
+          const share = totalAtRisk > 0 ? (((item.amount || 0) / totalAtRisk) * 100).toFixed(1) : '0';
           return (
             <div
               key={item.name}
@@ -205,12 +205,12 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ breakdown }) => {
                   <span style={{ fontSize: '11px', fontWeight: 800, color: '#475569' }}>{item.name}</span>
                 </div>
                 <span className="neo-badge" style={{ fontSize: '9px', padding: '1px 5px' }}>
-                  {item.count} cases
+                  {item.count || 0} cases
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '2px' }}>
                 <span style={{ fontSize: '13px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#121316' }}>
-                  ₹{item.amount.toLocaleString('en-IN')}
+                  ₹{(item.amount || 0).toLocaleString('en-IN')}
                 </span>
                 <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748b' }}>{share}%</span>
               </div>

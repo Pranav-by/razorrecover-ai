@@ -191,8 +191,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
         <MetricCard
           label="Revenue at Risk"
-          value={`₹${summary.revenueAtRisk.toLocaleString('en-IN')}`}
-          subtitle={`${summary.totalCases} detected leak incidents`}
+          value={`₹${(summary?.revenueAtRisk ?? 0).toLocaleString('en-IN')}`}
+          subtitle={`${summary?.totalCases ?? 0} detected leak incidents`}
           icon={<IndianRupee size={22} />}
           accentColor="#0284c7"
           badgeText="Detected"
@@ -200,8 +200,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
 
         <MetricCard
           label="Revenue Recovered"
-          value={`₹${summary.revenueRecovered.toLocaleString('en-IN')}`}
-          subtitle={`${summary.recoveryRate}% gross recovery conversion`}
+          value={`₹${(summary?.revenueRecovered ?? 0).toLocaleString('en-IN')}`}
+          subtitle={`${summary?.recoveryRate ?? 0}% gross recovery conversion`}
           icon={<TrendingUp size={22} />}
           accentColor="#16a34a"
           badgeText="Won Back"
@@ -209,7 +209,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
 
         <MetricCard
           label="Active Interventions"
-          value={summary.activeRecoveries}
+          value={summary?.activeRecoveries ?? 0}
           subtitle="Autonomous retry / link sequences"
           icon={<ShieldCheck size={22} />}
           accentColor="#ffe600"
@@ -218,11 +218,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
 
         <MetricCard
           label="Review Queue"
-          value={summary.humanReviews}
-          subtitle="Financial guardrail holds (>₹10k)"
+          value={summary?.humanReviews ?? 0}
+          subtitle="Held by ₹10,000 policy threshold"
           icon={<UserCheck size={22} />}
-          accentColor="#ff6b6b"
-          badgeText="Pending Review"
+          accentColor="#ef4444"
+          badgeText="Requires Human"
         />
       </div>
 
@@ -352,7 +352,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ isRunning, onRunBatch }) =
                         </div>
                       </td>
                       <td style={{ padding: '12px 14px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#121316' }}>
-                        ₹{item.amountAtRisk.toLocaleString('en-IN')}
+                        ₹{(item.amountAtRisk || (item as any).amount || 0).toLocaleString('en-IN')}
                       </td>
                       <td style={{ padding: '12px 14px' }}>
                         <div className="neo-badge neo-badge-yellow" style={{ fontSize: '10px', padding: '2px 8px', textTransform: 'uppercase' }}>
